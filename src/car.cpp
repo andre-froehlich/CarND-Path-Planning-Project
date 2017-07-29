@@ -49,8 +49,11 @@ void Car::calculateTrajectory(Position start_pos, double start_theta, double cur
   
   
   cout << "Target total speed=" << target_total_v << endl;
-  double target_v_x = target_total_v * cos(end_theta);
-  double target_v_y = target_total_v * sin(end_theta);
+  double target_v_x = speed_limit * cos(end_theta);
+  double target_v_y = speed_limit * sin(end_theta);
+  //  double target_v_x = target_total_v * cos(end_theta);
+  //  double target_v_y = target_total_v * sin(end_theta);
+
   
   vector<double> start_x = {start_pos.get_x(), start_pos.get_v_x(), start_pos.get_a_x()};
   vector<double> end_x = {end_pos.get_x(), target_v_x, 0.0};

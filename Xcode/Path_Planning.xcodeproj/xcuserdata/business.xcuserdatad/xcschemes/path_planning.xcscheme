@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "EE60199EA8EF498FBBD10CAB"
+               BlueprintIdentifier = "F2E4E226ED4440A38CBF7C1B"
                BuildableName = "path_planning"
                BlueprintName = "path_planning"
                ReferencedContainer = "container:Xcode/Path_Planning.xcodeproj">
@@ -32,7 +32,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EE60199EA8EF498FBBD10CAB"
+            BlueprintIdentifier = "F2E4E226ED4440A38CBF7C1B"
             BuildableName = "path_planning"
             BlueprintName = "path_planning"
             ReferencedContainer = "container:Xcode/Path_Planning.xcodeproj">
@@ -55,7 +55,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EE60199EA8EF498FBBD10CAB"
+            BlueprintIdentifier = "F2E4E226ED4440A38CBF7C1B"
             BuildableName = "path_planning"
             BlueprintName = "path_planning"
             ReferencedContainer = "container:Xcode/Path_Planning.xcodeproj">
@@ -74,7 +74,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "EE60199EA8EF498FBBD10CAB"
+            BlueprintIdentifier = "F2E4E226ED4440A38CBF7C1B"
             BuildableName = "path_planning"
             BlueprintName = "path_planning"
             ReferencedContainer = "container:Xcode/Path_Planning.xcodeproj">
