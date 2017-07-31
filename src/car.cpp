@@ -34,9 +34,6 @@ void Car::calculateTrajectory(Position start_pos, double start_theta, double cur
   const double a_max = 5.0;
   double T = dt * no_points;
   
-//  double target_total_v = speed_limit;
-//  double target_dist = 20.0;
-  
   double target_total_v = min(speed_limit, current_speed + a_max * T);
   double target_dist = current_speed * T + 0.5 * (target_total_v - current_speed) * T;
 
@@ -51,7 +48,8 @@ void Car::calculateTrajectory(Position start_pos, double start_theta, double cur
   end_pos.calc_xy(end_s, end_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
   
   Position end_pos_1;
-  end_pos_1.calc_xy(end_s - 0.4, end_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+//  end_pos_1.calc_xy(end_s - 0.4, end_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+  end_pos_1.calc_xy(end_s - target_total_v * dt, end_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
   double end_theta = atan((end_pos.get_y() - end_pos_1.get_y()) / (end_pos.get_x() - end_pos_1.get_x()));
   
   double target_v_x = target_total_v * cos(end_theta);
