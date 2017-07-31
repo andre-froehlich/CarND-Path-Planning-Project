@@ -185,7 +185,7 @@ int main() {
               double dy = car.traj.pos[limit - 1].get_y() - car.traj.pos[limit - 2].get_y();
               theta = atan(dy / dx);
 //                           (car.traj.pos[limit - 1].get_x() - car.traj.pos[limit - 2].get_x()) );
-              start_v = sqrt(dx * dx + dy * dy);
+              start_v = sqrt(dx * dx + dy * dy) / dt;
             }
             
             car.calculateTrajectory(start_pos, theta, start_v);

@@ -31,9 +31,16 @@ vector<double> Car::get_trajectory_y() {
 
 void Car::calculateTrajectory(Position start_pos, double start_theta, double current_speed) {
   const int no_points = 50;
+  const double a_max = 5.0;
   double T = dt * no_points;
-  double target_total_v = min(speed_limit, current_speed + 5.0);
-  double target_dist = (current_speed + target_total_v) / 2.0 * T;
+  
+//  double target_total_v = speed_limit;
+//  double target_dist = 20.0;
+  
+  double target_total_v = min(speed_limit, current_speed + a_max * T);
+  double target_dist = current_speed * T + 0.5 * (target_total_v - current_speed) * T;
+
+  cout << "Current v=" << current_speed << " / Target v=" << target_total_v << " / dist=" << target_dist << endl;
   
   vector<double> f = getFrenet(start_pos.get_x(), start_pos.get_y(), start_theta, map_waypoints_x, map_waypoints_y);
   double end_s = f[0] + target_dist;
@@ -47,12 +54,8 @@ void Car::calculateTrajectory(Position start_pos, double start_theta, double cur
   end_pos_1.calc_xy(end_s - 0.4, end_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
   double end_theta = atan((end_pos.get_y() - end_pos_1.get_y()) / (end_pos.get_x() - end_pos_1.get_x()));
   
-  
-  cout << "Target total speed=" << target_total_v << endl;
-  double target_v_x = speed_limit * cos(end_theta);
-  double target_v_y = speed_limit * sin(end_theta);
-  //  double target_v_x = target_total_v * cos(end_theta);
-  //  double target_v_y = target_total_v * sin(end_theta);
+  double target_v_x = target_total_v * cos(end_theta);
+  double target_v_y = target_total_v * sin(end_theta);
 
   
   vector<double> start_x = {start_pos.get_x(), start_pos.get_v_x(), start_pos.get_a_x()};
