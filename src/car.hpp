@@ -27,8 +27,6 @@ enum State {
   STAY, CL, CR
 };
 
-
-
 struct Trajectory {
   vector<Position> pos;
   double cost;
@@ -39,10 +37,9 @@ public:
   Lane current_lane = MIDDLE;
   State current_state = STAY;
   
-  Trajectory traj;
-  
-  vector<double> get_trajectory_x();
-  vector<double> get_trajectory_y();
+  Trajectory previous_trajectory;
+  Trajectory best_trajectory;
+  vector<Trajectory> candidate_trajectories;
   
   vector<double> map_waypoints_x;
   vector<double> map_waypoints_y;
@@ -50,7 +47,21 @@ public:
   vector<double> map_waypoints_dx;
   vector<double> map_waypoints_dy;
   
-  void calculateTrajectory(Position start, double start_theta, double current_speed);
+  // Creates a set of candidate trajectories.
+  void create_candidate_trajectories(Position start_pos, double start_theta, double current_speed);
+  
+  // Calculates a minimum jerk trajectory for the given inputs.
+  Trajectory calculateTrajectory(Position start_pos, double start_theta, double current_speed, double target_d);
+  
+  // Calculates the cost for a given trajectory. Returns false, if trajectory is not feasible.
+  bool evaluate_trajectory(Trajectory traj);
+  
+  // Determines the best trajectory according to cost function.
+  void select_best_trajectory();
+  
+  // Return vectors of xy coordinates for the best trajectory.
+  vector<double> get_best_trajectory_x();
+  vector<double> get_best_trajectory_y();
 
 };
 

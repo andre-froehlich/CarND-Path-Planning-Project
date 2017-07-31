@@ -13,26 +13,34 @@
 
 using namespace std;
 
-vector<double> Car::get_trajectory_x() {
+vector<double> Car::get_best_trajectory_x() {
   vector<double> result;
-  for (Position p : traj.pos) {
+  for (Position p : previous_trajectory.pos) {
+    result.push_back(p.get_x());
+  }
+  for (Position p : best_trajectory.pos) {
     result.push_back(p.get_x());
   }
   return result;
 }
 
-vector<double> Car::get_trajectory_y() {
+vector<double> Car::get_best_trajectory_y() {
   vector<double> result;
-  for (Position p : traj.pos) {
+  for (Position p : previous_trajectory.pos) {
+    result.push_back(p.get_y());
+  }
+  for (Position p : best_trajectory.pos) {
     result.push_back(p.get_y());
   }
   return result;
 }
 
-void Car::calculateTrajectory(Position start_pos, double start_theta, double current_speed) {
+Trajectory Car::calculateTrajectory(Position start_pos, double start_theta, double current_speed, double target_d) {
   const int no_points = 50;
   const double a_max = 5.0;
   double T = dt * no_points;
+  
+  Trajectory result;
   
   double target_total_v = min(speed_limit, current_speed + a_max * T);
   double target_dist = current_speed * T + 0.5 * (target_total_v - current_speed) * T;
@@ -42,13 +50,12 @@ void Car::calculateTrajectory(Position start_pos, double start_theta, double cur
   vector<double> f = getFrenet(start_pos.get_x(), start_pos.get_y(), start_theta, map_waypoints_x, map_waypoints_y);
   double end_s = f[0] + target_dist;
   if (end_s > 6945.554) end_s -= 6945.554;
-  double end_d = 6.0; //f[1];
+  double end_d = 6.0; //f[1]; // target_d
   
   Position end_pos;
   end_pos.calc_xy(end_s, end_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
   
   Position end_pos_1;
-//  end_pos_1.calc_xy(end_s - 0.4, end_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
   end_pos_1.calc_xy(end_s - target_total_v * dt, end_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
   double end_theta = atan((end_pos.get_y() - end_pos_1.get_y()) / (end_pos.get_x() - end_pos_1.get_x()));
   
@@ -91,6 +98,7 @@ void Car::calculateTrajectory(Position start_pos, double start_theta, double cur
     newPos.set_xy(coeffs_x[0] + coeffs_x[1] * t + coeffs_x[2] * tt + coeffs_x[3] * ttt + coeffs_x[4] * tttt + coeffs_x[5] * ttttt,
                   coeffs_y[0] + coeffs_y[1] * t + coeffs_y[2] * tt + coeffs_y[3] * ttt + coeffs_y[4] * tttt + coeffs_y[5] * ttttt);
     
+    // Calculate speed and acceleration for the trajectory point
     if (prevPos.is_xy_init()) {
       newPos.calc_v_xy(prevPos);
       if (prevPos.is_v_xy_init()) {
@@ -98,7 +106,28 @@ void Car::calculateTrajectory(Position start_pos, double start_theta, double cur
       }
     }
     
-    traj.pos.push_back(newPos);
+    result.pos.push_back(newPos);
     prevPos = newPos;
   }
+  
+  return result;
+}
+
+bool Car::evaluate_trajectory(Trajectory traj) {
+  // TODO: feasibility checks
+  // TODO: calculate cost
+  
+  traj.cost = 1;
+  return true;
+}
+
+void Car::create_candidate_trajectories(Position start_pos, double start_theta, double current_speed) {
+  candidate_trajectories.clear();
+  
+  // TODO: Calculate some trajectories...
+  Trajectory traj = calculateTrajectory(start_pos, start_theta, current_speed, 6.0);
+  if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
+  
+  // Select best trajectory
+  best_trajectory = traj;
 }

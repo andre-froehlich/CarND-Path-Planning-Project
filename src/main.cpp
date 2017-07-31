@@ -145,9 +145,9 @@ int main() {
             cout << "Telemetry s=" << car_s << " / d=" << car_d << " / speed=" << car_speed
               << " / x=" << car_x << " / y=" << car_y << " / yaw=" << car_yaw << endl;
             
-            car.traj.pos.clear();
+            car.best_trajectory.pos.clear();
+            car.previous_trajectory.pos.clear();
 
-//            int prev_path_length = 0;
             int prev_path_length = previous_path_x.size();
             cout << "Prev path length=" << prev_path_length << endl;
             
@@ -158,10 +158,9 @@ int main() {
               start_pos.set_xy(car_x, car_y);
               theta = car_yaw;
               start_pos.set_v_xy(car_speed * cos(theta), car_speed * sin(theta));
-//              start_pos.set_v_xy(car_speed * sin(theta), car_speed * cos(theta));
               start_pos.set_a_xy(0.0, 0.0);          // we don't know, so we assume 0.0
               start_v = car_speed;
-              car.traj.pos.push_back(start_pos);
+              car.previous_trajectory.pos.push_back(start_pos);
             } else {
               int limit = min(100, prev_path_length);
               cout << "limit=" << limit << endl;
@@ -176,19 +175,20 @@ int main() {
                   }
                 }
 
-                car.traj.pos.push_back(newPos);
+                car.previous_trajectory.pos.push_back(newPos);
                 prevPos = newPos;
               }
               
               start_pos = prevPos;
-              double dx = car.traj.pos[limit - 1].get_x() - car.traj.pos[limit - 2].get_x();
-              double dy = car.traj.pos[limit - 1].get_y() - car.traj.pos[limit - 2].get_y();
+              double dx = car.previous_trajectory.pos[limit - 1].get_x() - car.previous_trajectory.pos[limit - 2].get_x();
+              double dy = car.previous_trajectory.pos[limit - 1].get_y() - car.previous_trajectory.pos[limit - 2].get_y();
               theta = atan(dy / dx);
-//                           (car.traj.pos[limit - 1].get_x() - car.traj.pos[limit - 2].get_x()) );
               start_v = sqrt(dx * dx + dy * dy) / dt;
             }
             
-            car.calculateTrajectory(start_pos, theta, start_v);
+//            car.calculateTrajectory(start_pos, theta, start_v, 6.0);
+            car.create_candidate_trajectories(start_pos, theta, start_v);
+            //car.select_best_trajectory();
   
           }
           
@@ -199,8 +199,8 @@ int main() {
 //            }
 //          }
           
-          msgJson["next_x"] = car.get_trajectory_x();
-          msgJson["next_y"] = car.get_trajectory_y();
+          msgJson["next_x"] = car.get_best_trajectory_x();
+          msgJson["next_y"] = car.get_best_trajectory_y();
           
           auto msg = "42[\"control\","+ msgJson.dump()+"]";
           
