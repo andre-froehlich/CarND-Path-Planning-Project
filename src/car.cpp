@@ -35,19 +35,19 @@ vector<double> Car::get_best_trajectory_y() {
   return result;
 }
 
-Trajectory Car::calculateTrajectory(Position start_pos, double start_theta, double current_speed, double target_d) {
+Trajectory Car::calculateTrajectory(Position start_pos, double target_d, double desired_v) {
   const int no_points = 50;
-  const double a_max = 5.0;
+  const double max_a = 5.0;
   double T = dt * no_points;
   
   Trajectory result;
   
-  double target_total_v = min(speed_limit, current_speed + a_max * T);
-  double target_dist = current_speed * T + 0.5 * (target_total_v - current_speed) * T;
+  double target_total_v = min(desired_v, start_pos.get_v_total() + max_a * T);
+  double target_dist = start_pos.get_v_total() * T + 0.5 * (target_total_v - start_pos.get_v_total()) * T;
 
-  cout << "Current v=" << current_speed << " / Target v=" << target_total_v << " / dist=" << target_dist << endl;
+  cout << "Current v=" << start_pos.get_v_total() << " / Target v=" << target_total_v << " / dist=" << target_dist << endl;
   
-  vector<double> f = getFrenet(start_pos.get_x(), start_pos.get_y(), start_theta, map_waypoints_x, map_waypoints_y);
+  vector<double> f = getFrenet(start_pos.get_x(), start_pos.get_y(), start_pos.get_theta(), map_waypoints_x, map_waypoints_y);
   double end_s = f[0] + target_dist;
   if (end_s > 6945.554) end_s -= 6945.554;
   double end_d = 6.0; //f[1]; // target_d
@@ -101,6 +101,8 @@ Trajectory Car::calculateTrajectory(Position start_pos, double start_theta, doub
     // Calculate speed and acceleration for the trajectory point
     if (prevPos.is_xy_init()) {
       newPos.calc_v_xy(prevPos);
+      newPos.calc_v_total();
+      newPos.calc_theta(prevPos);
       if (prevPos.is_v_xy_init()) {
         newPos.calc_a_xy(prevPos);
       }
@@ -115,19 +117,48 @@ Trajectory Car::calculateTrajectory(Position start_pos, double start_theta, doub
 
 bool Car::evaluate_trajectory(Trajectory traj) {
   // TODO: feasibility checks
+  for (Position p : traj.pos) {
+    // Check speed
+    if (p.get_v_total() >= speed_limit_real) {
+      return false;
+    }
+    
+    // Check AccTotal
+    double a_total = sqrt(p.get_a_x() * p.get_a_x() + p.get_a_y() * p.get_a_y());
+    if (a_total > a_max) {
+      return false;
+    }
+    
+    // Check AccT
+    // Check AccN
+    // Check Jerk
+  }
+  
+  // TODO: Check for collisions
+  
+  
   // TODO: calculate cost
   
   traj.cost = 1;
   return true;
 }
 
-void Car::create_candidate_trajectories(Position start_pos, double start_theta, double current_speed) {
+void Car::create_candidate_trajectories(Position start_pos) {
   candidate_trajectories.clear();
   
   // TODO: Calculate some trajectories...
-  Trajectory traj = calculateTrajectory(start_pos, start_theta, current_speed, 6.0);
+  Trajectory traj = calculateTrajectory(start_pos, 6.0, speed_limit);
+  if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
+  
+  traj = calculateTrajectory(start_pos, 6.0, speed_limit - 5.0);
+  if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
+  
+  traj = calculateTrajectory(start_pos, 6.0, speed_limit - 10.0);
+  if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
+  
+  traj = calculateTrajectory(start_pos, 6.0, speed_limit - 15.0);
   if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
   
   // Select best trajectory
-  best_trajectory = traj;
+  best_trajectory = candidate_trajectories[0];
 }

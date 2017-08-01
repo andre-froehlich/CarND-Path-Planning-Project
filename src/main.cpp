@@ -152,14 +152,16 @@ int main() {
             cout << "Prev path length=" << prev_path_length << endl;
             
             Position start_pos;
-            double theta;
-            double start_v;
+//            double theta;
+//            double start_v;
             if (prev_path_length == 0) {
               start_pos.set_xy(car_x, car_y);
-              theta = car_yaw;
-              start_pos.set_v_xy(car_speed * cos(theta), car_speed * sin(theta));
+//              theta = car_yaw;
+              start_pos.set_theta(car_yaw);
+              start_pos.set_v_xy(car_speed * cos(car_yaw), car_speed * sin(car_yaw));
               start_pos.set_a_xy(0.0, 0.0);          // we don't know, so we assume 0.0
-              start_v = car_speed;
+//              start_v = car_speed;
+              start_pos.set_v_total(car_speed);
               car.previous_trajectory.pos.push_back(start_pos);
             } else {
               int limit = min(100, prev_path_length);
@@ -180,14 +182,17 @@ int main() {
               }
               
               start_pos = prevPos;
-              double dx = car.previous_trajectory.pos[limit - 1].get_x() - car.previous_trajectory.pos[limit - 2].get_x();
-              double dy = car.previous_trajectory.pos[limit - 1].get_y() - car.previous_trajectory.pos[limit - 2].get_y();
-              theta = atan(dy / dx);
-              start_v = sqrt(dx * dx + dy * dy) / dt;
+              start_pos.calc_theta(car.previous_trajectory.pos[limit - 2]);
+              start_pos.calc_v_total();
+              
+//              double dx = car.previous_trajectory.pos[limit - 1].get_x() - car.previous_trajectory.pos[limit - 2].get_x();
+//              double dy = car.previous_trajectory.pos[limit - 1].get_y() - car.previous_trajectory.pos[limit - 2].get_y();
+//              theta = atan(dy / dx);
+//              start_v = sqrt(dx * dx + dy * dy) / dt;
             }
             
 //            car.calculateTrajectory(start_pos, theta, start_v, 6.0);
-            car.create_candidate_trajectories(start_pos, theta, start_v);
+            car.create_candidate_trajectories(start_pos);
             //car.select_best_trajectory();
   
           }

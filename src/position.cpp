@@ -22,6 +22,10 @@ double Position::get_y() {
   return y;
 }
 
+double Position::get_v_total() {
+  return v_total;
+}
+
 double Position::get_v_x() {
   return v_x;
 }
@@ -38,6 +42,10 @@ double Position::get_a_y() {
   return a_y;
 }
 
+double Position::get_theta() {
+  return theta;
+}
+
 bool Position::is_xy_init() {
   return xy_init;
 }
@@ -52,6 +60,10 @@ void Position::set_xy(double x, double y) {
   xy_init = true;
 }
 
+void Position::set_v_total(double v) {
+  v_total = v;
+}
+
 void Position::set_v_xy(double vx, double vy) {
   v_x = vx;
   v_y = vy;
@@ -64,12 +76,20 @@ void Position::set_a_xy(double ax, double ay) {
   a_xy_init = true;
 }
 
+void Position::set_theta(double t) {
+  theta = t;
+}
+
 void Position::calc_xy(double s, double d, vector<double> &map_waypoints_s, vector<double> &map_waypoints_x, vector<double> &map_waypoints_y) {  
   vector<double> coord = getXY(s, d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
   x = coord[0];
   y = coord[1];
   
   xy_init = true;
+}
+
+void Position::calc_v_total() {
+  v_total = sqrt(v_x * v_x + v_y * v_y);
 }
 
 void Position::calc_v_xy(Position &prev) {
@@ -81,6 +101,12 @@ void Position::calc_v_xy(Position &prev) {
 void Position::calc_a_xy(Position &prev) {
   a_x = (v_x - prev.v_x) / dt;
   a_y = (v_y - prev.v_y) / dt;
+}
+
+void Position::calc_theta(Position &prev) {
+  double dx = x - prev.x;
+  double dy = y - prev.y;
+  theta = atan(dy / dx);
 }
 
 string Position::toString() {

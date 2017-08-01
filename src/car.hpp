@@ -48,10 +48,10 @@ public:
   vector<double> map_waypoints_dy;
   
   // Creates a set of candidate trajectories.
-  void create_candidate_trajectories(Position start_pos, double start_theta, double current_speed);
+  void create_candidate_trajectories(Position start_pos);
   
   // Calculates a minimum jerk trajectory for the given inputs.
-  Trajectory calculateTrajectory(Position start_pos, double start_theta, double current_speed, double target_d);
+  Trajectory calculateTrajectory(Position start_pos, double target_d, double desired_v);
   
   // Calculates the cost for a given trajectory. Returns false, if trajectory is not feasible.
   bool evaluate_trajectory(Trajectory traj);
