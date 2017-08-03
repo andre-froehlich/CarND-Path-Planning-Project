@@ -171,6 +171,26 @@ vector<double> JMT(vector<double> start, vector<double> end, double T) {
   return result;
 }
 
+Lane getLane(double d) {
+  if (d >= 0.0 && d<4.0) {
+    return Lane::LEFT;
+  }
+  if (d>4.0 && d<8.0) {
+    return Lane::MIDDLE;
+  }
+  if (d>=8.0 && d<=10.0) {
+    return Lane::RIGHT;
+  }
+  return Lane::NONE;
+}
+
+double get_dist_s(double my_s, double other_s) {
+  if (other_s < my_s) {
+    other_s += max_s;
+  }
+  return other_s - my_s;
+}
+
 
 
 

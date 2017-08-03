@@ -13,6 +13,7 @@
 #include "helper.hpp"
 #include "car.hpp"
 #include "position.hpp"
+//#include "othercar.hpp"
 
 using namespace std;
 
@@ -35,7 +36,6 @@ string hasData(string s) {
 }
 
 Car car = Car();
-//bool init = false;
 int cycle_counter = 0;
 
 int main() {
@@ -134,13 +134,48 @@ int main() {
 
           // Sensor Fusion Data, a list of all other cars on the same side of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
+          
+          car.current_lane = getLane(car_d);
+//          car.other_cars.clear();
+          
+          double nearest_s = numeric_limits<double>::max();
+          car.car_in_lane.valid = false;
+          
+          for (int i=0; i<sensor_fusion.size(); i++) {
+            auto c = sensor_fusion[i];
+            
+            int id = c[0];
+            double x = c[1];
+            double y = c[2];
+            double vx = c[3];
+            double vy = c[4];
+            double s = c[5];
+            double d = c[6];
+            
+            if (getLane(d) == car.current_lane) {
+              double dist_s = get_dist_s(car_s, s);
+              
+              if (dist_s < safe_dist && dist_s < nearest_s) {
+                nearest_s = dist_s;
+                OtherCar o(id, x, y, vx, vy, s, d, car.map_waypoints_s, car.map_waypoints_x, car.map_waypoints_y);
+                
+                if (o.v_total <= speed_limit_real) {
+                  car.car_in_lane = o;
+                  car.car_in_lane.valid = true;
+                  cout << o.toString() << endl;
+                }
+              }
+            }
+
+          }
+          
 
           json msgJson;
           
           cycle_counter++;
           
-          cout << "Cycle " << cycle_counter << ") Telemetry s=" << car_s << " / d=" << car_d << " / speed=" << car_speed
-          << " / x=" << car_x << " / y=" << car_y << " / yaw=" << car_yaw << endl;
+//          cout << "Cycle " << cycle_counter << ") Telemetry s=" << car_s << " / d=" << car_d << " / speed=" << car_speed
+//          << " / x=" << car_x << " / y=" << car_y << " / yaw=" << car_yaw << endl;
           
           if (cycle_counter < 2) {
 //            car.best_trajectory.pos.clear();
@@ -155,13 +190,11 @@ int main() {
             
           } else {
           
-
-            
             car.best_trajectory.pos.clear();
             car.previous_trajectory.pos.clear();
 
             int prev_path_length = previous_path_x.size();
-            cout << "Prev path length=" << prev_path_length << endl;
+//            cout << "Prev path length=" << prev_path_length << endl;
             
             Position start_pos;
             int no_points;
@@ -173,12 +206,12 @@ int main() {
               start_pos.set_v_total(car_speed);
               start_pos.calc_a_total();
               car.previous_trajectory.pos.push_back(start_pos);
-              no_points = 200;
+              no_points = desired_path_len;
             } else {
 //              int limit = min(100, prev_path_length);
               int limit = prev_path_length;
-              no_points = 200 - prev_path_length;
-              cout << "limit=" << limit << endl;
+              no_points = desired_path_len - prev_path_length;
+//              cout << "limit=" << limit << endl;
               Position prevPos;
               for (int i=0; i<limit; i++) {
                 Position newPos;
@@ -201,15 +234,13 @@ int main() {
               start_pos.calc_v_total();
             }
             
-            cout << "NP:" << no_points << endl;
+//            cout << "NP:" << no_points << endl;
             if (no_points >= 25) {
               car.create_candidate_trajectories(start_pos, no_points);
             }
             //car.select_best_trajectory();
   
           }
-          
-//          cout << "OU" << endl;
           
           msgJson["next_x"] = car.get_best_trajectory_x();
           msgJson["next_y"] = car.get_best_trajectory_y();

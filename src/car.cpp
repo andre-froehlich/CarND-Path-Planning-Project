@@ -10,8 +10,61 @@
 #include "helper.hpp"
 #include "car.hpp"
 #include "position.hpp"
+//#include "othercar.hpp"
 
 using namespace std;
+
+OtherCar::OtherCar(int id, double x, double y, double vx, double vy, double s, double d, vector<double> &maps_s, vector<double> &maps_x, vector<double> &maps_y) {
+  this->id = id;
+  this->x = x;
+  this->y = y;
+  this->vx = vx;
+  this->vy = vy;
+  this->s = s;
+  this->d = d;
+  
+  v_total = sqrt(vx * vx + vy * vy);
+//  Position start_pos;
+//  start_pos.set_xy(x, y);
+//  traj.pos.push_back(start_pos);
+//  double v_incr = v_total * dt;
+//  
+//  for (int i=0; i<desired_path_len; i++) {
+//    s += v_incr;
+//    vector<double> f = getXY(s, d, maps_s, maps_x, maps_y);
+//    Position pos;
+//    pos.set_xy(f[0], f[1]);
+//    traj.pos.push_back(pos);
+//  }
+}
+
+double OtherCar::min_dist(Trajectory prev_traj, Trajectory new_traj) {
+  double result = numeric_limits<double>::max();
+  int i = 0;
+  for (Position p : prev_traj.pos) {
+    double dist_x = p.get_x() - traj.pos[i].get_x();
+    double dist_y = p.get_y() - traj.pos[i].get_y();
+    double dist = sqrt(dist_x * dist_x + dist_y * dist_y);
+    if (dist < result) result = dist;
+    i++;
+  }
+  
+  for (Position p : new_traj.pos) {
+    double dist_x = p.get_x() - traj.pos[i].get_x();
+    double dist_y = p.get_y() - traj.pos[i].get_y();
+    double dist = sqrt(dist_x * dist_x + dist_y * dist_y);
+    if (dist < result) result = dist;
+    i++;
+  }
+  
+  return result;
+}
+
+string OtherCar::toString() {
+  return "OtherCar id=" + to_string(id) + " / x=" + to_string(x) + " / y=" + to_string(y) + " / vx=" +
+  to_string(vx) + " / vy=" + to_string(vy) + " / s=" + to_string(s) + " / d=" + to_string(d);
+}
+
 
 int max_trajectory_length = 200;
 vector<double> Car::get_best_trajectory_x() {
@@ -160,6 +213,12 @@ bool Car::evaluate_trajectory(Trajectory traj) {
     // Check Jerk
   }
   
+//  for (OtherCar o : other_cars) {
+////    double min_dist = o.min_dist(previous_trajectory, traj);
+////    cout << "min distance to " << o.id << ": " << min_dist << endl;
+//    cout << o.toString() << endl;
+//  }
+  
   // TODO: Check for collisions
   
   
@@ -176,31 +235,41 @@ void printTrajectory(Trajectory t) {
 }
 
 void Car::create_candidate_trajectories(Position start_pos, int no_points) {
-  cout << start_pos.toString() << endl;
+//  cout << start_pos.toString() << endl;
   
   candidate_trajectories.clear();
   
-  // TODO: Calculate some trajectories...
-  for (int dv=0; dv<=0; dv+=2) {
-    Trajectory traj = calculateTrajectory(start_pos, 6.0, speed_limit - dv, no_points);
-    cout << "Traj len=" << traj.pos.size() << endl;
-    if (evaluate_trajectory(traj)) {
-      candidate_trajectories.push_back(traj);
-    } else {
-      printTrajectory(traj);
-      exit(0);
-    }
+  // Calculate trajectory without lane change
+  Trajectory traj;
+  if (car_in_lane.valid) {
+    traj = calculateTrajectory(start_pos, current_lane, car_in_lane.v_total - 1.0, no_points);
+  } else {
+    traj = calculateTrajectory(start_pos, current_lane, speed_limit, no_points);
   }
+  
+  best_trajectory = traj;
+  
+  // TODO: Calculate some trajectories...
+//  for (int dv=0; dv<=0; dv+=2) {
+//    Trajectory traj = calculateTrajectory(start_pos, 6.0, speed_limit - dv, no_points);
+////    cout << "Traj len=" << traj.pos.size() << endl;
+//    if (evaluate_trajectory(traj)) {
+//      candidate_trajectories.push_back(traj);
+//    } else {
+//      printTrajectory(traj);
+//      exit(0);
+//    }
+//  }
   
 //  if (candidate_trajectories.size() == 0) {
 //    exit(0);
 //  }
   
   // Select best trajectory
-  if (candidate_trajectories.size() > 0) {
-    best_trajectory = candidate_trajectories[0];
-  } else {
-    best_trajectory.pos.clear();
-  }
+//  if (candidate_trajectories.size() > 0) {
+//    best_trajectory = candidate_trajectories[0];
+//  } else {
+//    best_trajectory.pos.clear();
+//  }
 //  cout << best_trajectory.pos[best_trajectory.pos.size() - 1]
 }

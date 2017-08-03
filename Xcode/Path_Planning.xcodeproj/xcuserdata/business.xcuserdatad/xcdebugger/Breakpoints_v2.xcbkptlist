@@ -10,11 +10,27 @@
             ignoreCount = "1"
             continueAfterRunningActions = "No"
             filePath = "src/car.cpp"
-            timestampString = "523474679.298564"
+            timestampString = "523486293.334735"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "179"
-            endingLineNumber = "179"
+            startingLineNumber = "233"
+            endingLineNumber = "233"
+            landmarkName = "printTrajectory(Trajectory t)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "src/car.cpp"
+            timestampString = "523488896.441651"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "252"
+            endingLineNumber = "252"
             landmarkName = "Car::create_candidate_trajectories(Position start_pos, int no_points)"
             landmarkType = "7">
          </BreakpointContent>
@@ -25,30 +41,12 @@
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "src/car.cpp"
-            timestampString = "523474679.298564"
+            filePath = "src/othercar.hpp"
+            timestampString = "523483972.701314"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "188"
-            endingLineNumber = "188"
-            landmarkName = "Car::create_candidate_trajectories(Position start_pos, int no_points)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "src/car.cpp"
-            timestampString = "523474229.618682"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "129"
-            endingLineNumber = "129"
-            landmarkName = "Car::calculateTrajectory(Position start_pos, double target_d, double desired_v, int no_points)"
-            landmarkType = "7">
+            startingLineNumber = "33"
+            endingLineNumber = "33">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
