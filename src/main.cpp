@@ -35,7 +35,8 @@ string hasData(string s) {
 }
 
 Car car = Car();
-bool init = false;
+//bool init = false;
+int cycle_counter = 0;
 
 int main() {
   uWS::Hub h;
@@ -85,8 +86,8 @@ int main() {
   car.map_waypoints_y.clear();
   car.map_waypoints_s.clear();
   
-  int spline_samples = 12000;
-  for (int i = 0; i < spline_samples; ++i) {
+//  int spline_samples = 12000;
+  for (double i = 0.0; i <= max_s; i+=0.5) {
     car.map_waypoints_x.push_back(spline_x(i));
     car.map_waypoints_y.push_back(spline_y(i));
     car.map_waypoints_s.push_back(i);
@@ -112,8 +113,6 @@ int main() {
         string event = j[0].get<string>();
         
         if (event == "telemetry") {
-          cout << "Telemetry received" << endl;
-          
           // j[1] is the data JSON object
           
         	// Main car's localization Data
@@ -138,12 +137,25 @@ int main() {
 
           json msgJson;
           
-          if (!init) {
-            init = true;
+          cycle_counter++;
+          
+          cout << "Cycle " << cycle_counter << ") Telemetry s=" << car_s << " / d=" << car_d << " / speed=" << car_speed
+          << " / x=" << car_x << " / y=" << car_y << " / yaw=" << car_yaw << endl;
+          
+          if (cycle_counter < 2) {
+//            car.best_trajectory.pos.clear();
+            
+//            Position p;
+//            p.set_xy(2180, 1828);
+//            car.best_trajectory.pos.push_back(p);
+//            
+//            Position p2;
+//            p2.set_xy(2182, 1833);
+//            car.best_trajectory.pos.push_back(p2);
+            
           } else {
           
-            cout << "Telemetry s=" << car_s << " / d=" << car_d << " / speed=" << car_speed
-              << " / x=" << car_x << " / y=" << car_y << " / yaw=" << car_yaw << endl;
+
             
             car.best_trajectory.pos.clear();
             car.previous_trajectory.pos.clear();
@@ -152,19 +164,20 @@ int main() {
             cout << "Prev path length=" << prev_path_length << endl;
             
             Position start_pos;
-//            double theta;
-//            double start_v;
+            int no_points;
             if (prev_path_length == 0) {
               start_pos.set_xy(car_x, car_y);
-//              theta = car_yaw;
               start_pos.set_theta(car_yaw);
               start_pos.set_v_xy(car_speed * cos(car_yaw), car_speed * sin(car_yaw));
               start_pos.set_a_xy(0.0, 0.0);          // we don't know, so we assume 0.0
-//              start_v = car_speed;
               start_pos.set_v_total(car_speed);
+              start_pos.calc_a_total();
               car.previous_trajectory.pos.push_back(start_pos);
+              no_points = 200;
             } else {
-              int limit = min(100, prev_path_length);
+//              int limit = min(100, prev_path_length);
+              int limit = prev_path_length;
+              no_points = 200 - prev_path_length;
               cout << "limit=" << limit << endl;
               Position prevPos;
               for (int i=0; i<limit; i++) {
@@ -172,8 +185,10 @@ int main() {
                 newPos.set_xy(previous_path_x[i], previous_path_y[i]);
                 if (prevPos.is_xy_init()) {
                   newPos.calc_v_xy(prevPos);
+                  newPos.calc_v_total();
                   if (prevPos.is_v_xy_init()) {
                     newPos.calc_a_xy(prevPos);
+                    newPos.calc_a_total();
                   }
                 }
 
@@ -184,25 +199,17 @@ int main() {
               start_pos = prevPos;
               start_pos.calc_theta(car.previous_trajectory.pos[limit - 2]);
               start_pos.calc_v_total();
-              
-//              double dx = car.previous_trajectory.pos[limit - 1].get_x() - car.previous_trajectory.pos[limit - 2].get_x();
-//              double dy = car.previous_trajectory.pos[limit - 1].get_y() - car.previous_trajectory.pos[limit - 2].get_y();
-//              theta = atan(dy / dx);
-//              start_v = sqrt(dx * dx + dy * dy) / dt;
             }
             
-//            car.calculateTrajectory(start_pos, theta, start_v, 6.0);
-            car.create_candidate_trajectories(start_pos);
+            cout << "NP:" << no_points << endl;
+            if (no_points >= 25) {
+              car.create_candidate_trajectories(start_pos, no_points);
+            }
             //car.select_best_trajectory();
   
           }
           
-//          if (car.traj.pos.size() > 110) {
-//            for (int i=0; i<110; i++) {
-//              cout << i << ": ";
-//              cout << car.traj.pos[i].toString() << endl;
-//            }
-//          }
+//          cout << "OU" << endl;
           
           msgJson["next_x"] = car.get_best_trajectory_x();
           msgJson["next_y"] = car.get_best_trajectory_y();

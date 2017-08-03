@@ -13,12 +13,18 @@
 
 using namespace std;
 
+int max_trajectory_length = 200;
 vector<double> Car::get_best_trajectory_x() {
   vector<double> result;
+  int i = 0;
   for (Position p : previous_trajectory.pos) {
+    i++;
+    if (i > max_trajectory_length) break;
     result.push_back(p.get_x());
   }
   for (Position p : best_trajectory.pos) {
+    i++;
+    if (i > max_trajectory_length) break;
     result.push_back(p.get_x());
   }
   return result;
@@ -26,26 +32,33 @@ vector<double> Car::get_best_trajectory_x() {
 
 vector<double> Car::get_best_trajectory_y() {
   vector<double> result;
+  int i = 0;
   for (Position p : previous_trajectory.pos) {
+    i++;
+    if (i > max_trajectory_length) break;
     result.push_back(p.get_y());
   }
   for (Position p : best_trajectory.pos) {
+    i++;
+    if (i > max_trajectory_length) break;
     result.push_back(p.get_y());
   }
   return result;
 }
 
-Trajectory Car::calculateTrajectory(Position start_pos, double target_d, double desired_v) {
-  const int no_points = 50;
+Trajectory Car::calculateTrajectory(Position start_pos, double target_d, double desired_v, int no_points) {
+//  const int no_points = 50;
   const double max_a = 5.0;
   double T = dt * no_points;
   
   Trajectory result;
   
+  start_pos.safety_adjust_v();
+  
   double target_total_v = min(desired_v, start_pos.get_v_total() + max_a * T);
   double target_dist = start_pos.get_v_total() * T + 0.5 * (target_total_v - start_pos.get_v_total()) * T;
 
-  cout << "Current v=" << start_pos.get_v_total() << " / Target v=" << target_total_v << " / dist=" << target_dist << endl;
+//  cout << "Current v=" << start_pos.get_v_total() << " / Target v=" << target_total_v << " / dist=" << target_dist << endl;
   
   vector<double> f = getFrenet(start_pos.get_x(), start_pos.get_y(), start_pos.get_theta(), map_waypoints_x, map_waypoints_y);
   double end_s = f[0] + target_dist;
@@ -63,13 +76,15 @@ Trajectory Car::calculateTrajectory(Position start_pos, double target_d, double 
   double target_v_y = target_total_v * sin(end_theta);
 
   
-  vector<double> start_x = {start_pos.get_x(), start_pos.get_v_x(), start_pos.get_a_x()};
+//  vector<double> start_x = {start_pos.get_x(), start_pos.get_v_x(), start_pos.get_a_x()};
+  vector<double> start_x = {start_pos.get_x(), start_pos.get_v_x(), 0.0};
   vector<double> end_x = {end_pos.get_x(), target_v_x, 0.0};
-  vector<double> start_y = {start_pos.get_y(), start_pos.get_v_y(), start_pos.get_a_y()};
+//  vector<double> start_y = {start_pos.get_y(), start_pos.get_v_y(), start_pos.get_a_y()};
+  vector<double> start_y = {start_pos.get_y(), start_pos.get_v_y(), 0.0};
   vector<double> end_y = {end_pos.get_y(), target_v_y, 0.0};
   
-  cout << "Start Pos: " << start_pos.toString() << endl;
-  cout << "End Pos  : " << end_pos.toString() << endl;
+//  cout << "Start Pos: " << start_pos.toString() << endl;
+//  cout << "End Pos  : " << end_pos.toString() << endl;
   
   vector<double> coeffs_x = JMT(start_x, end_x, T);
   vector<double> coeffs_y = JMT(start_y, end_y, T);
@@ -87,6 +102,8 @@ Trajectory Car::calculateTrajectory(Position start_pos, double target_d, double 
   
   Position prevPos = start_pos;
   for (double t=dt; t<=T; t+=dt) {
+//    cout << "LOOP START: t=" << t << " / T=" << T << endl;
+    
     // Calculate powers of t to reduce computation
     double tt = t * t;
     double ttt = tt * t;
@@ -105,11 +122,20 @@ Trajectory Car::calculateTrajectory(Position start_pos, double target_d, double 
       newPos.calc_theta(prevPos);
       if (prevPos.is_v_xy_init()) {
         newPos.calc_a_xy(prevPos);
+        newPos.calc_a_total();
       }
     }
     
-    result.pos.push_back(newPos);
-    prevPos = newPos;
+    if (newPos.get_v_total() <= speed_limit) {
+      result.pos.push_back(newPos);
+      prevPos = newPos;
+    } else {
+//      cout << "INV START: t=" << t << " / T=" << T << endl;
+      t -= dt;
+      t -= 0.002;
+      T -= 0.002;
+//      cout << "INV END: t=" << t << " / T=" << T << endl;
+    }
   }
   
   return result;
@@ -119,15 +145,15 @@ bool Car::evaluate_trajectory(Trajectory traj) {
   // TODO: feasibility checks
   for (Position p : traj.pos) {
     // Check speed
-    if (p.get_v_total() >= speed_limit_real) {
+    if (p.get_v_total() > speed_limit_real) {
       return false;
     }
     
     // Check AccTotal
-    double a_total = sqrt(p.get_a_x() * p.get_a_x() + p.get_a_y() * p.get_a_y());
-    if (a_total > a_max) {
-      return false;
-    }
+//    double a_total = sqrt(p.get_a_x() * p.get_a_x() + p.get_a_y() * p.get_a_y());
+//    if (a_total > a_max) {
+//      return false;
+//    }
     
     // Check AccT
     // Check AccN
@@ -143,22 +169,38 @@ bool Car::evaluate_trajectory(Trajectory traj) {
   return true;
 }
 
-void Car::create_candidate_trajectories(Position start_pos) {
+void printTrajectory(Trajectory t) {
+  for (Position p : t.pos) {
+    cout << p.toString() << endl;
+  }
+}
+
+void Car::create_candidate_trajectories(Position start_pos, int no_points) {
+  cout << start_pos.toString() << endl;
+  
   candidate_trajectories.clear();
   
   // TODO: Calculate some trajectories...
-  Trajectory traj = calculateTrajectory(start_pos, 6.0, speed_limit);
-  if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
+  for (int dv=0; dv<=0; dv+=2) {
+    Trajectory traj = calculateTrajectory(start_pos, 6.0, speed_limit - dv, no_points);
+    cout << "Traj len=" << traj.pos.size() << endl;
+    if (evaluate_trajectory(traj)) {
+      candidate_trajectories.push_back(traj);
+    } else {
+      printTrajectory(traj);
+      exit(0);
+    }
+  }
   
-  traj = calculateTrajectory(start_pos, 6.0, speed_limit - 5.0);
-  if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
-  
-  traj = calculateTrajectory(start_pos, 6.0, speed_limit - 10.0);
-  if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
-  
-  traj = calculateTrajectory(start_pos, 6.0, speed_limit - 15.0);
-  if (evaluate_trajectory(traj)) candidate_trajectories.push_back(traj);
+//  if (candidate_trajectories.size() == 0) {
+//    exit(0);
+//  }
   
   // Select best trajectory
-  best_trajectory = candidate_trajectories[0];
+  if (candidate_trajectories.size() > 0) {
+    best_trajectory = candidate_trajectories[0];
+  } else {
+    best_trajectory.pos.clear();
+  }
+//  cout << best_trajectory.pos[best_trajectory.pos.size() - 1]
 }

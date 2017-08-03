@@ -22,6 +22,7 @@ private:
   double v_total;
   double v_x;
   double v_y;
+  double a_total;
   double a_x;
   double a_y;
   
@@ -54,8 +55,11 @@ public:
   void calc_xy(double s, double d, vector<double> &map_waypoints_s, vector<double> &map_waypoints_x, vector<double> &map_waypoints_y);
   void calc_v_total();
   void calc_v_xy(Position &prev);
+  void calc_a_total();
   void calc_a_xy(Position &prev);
   void calc_theta(Position &prev);
+  
+  void safety_adjust_v();
   
   string toString();
 };

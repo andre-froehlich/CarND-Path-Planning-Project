@@ -92,6 +92,10 @@ void Position::calc_v_total() {
   v_total = sqrt(v_x * v_x + v_y * v_y);
 }
 
+void Position::calc_a_total() {
+  a_total = sqrt(a_x * a_x + a_y * a_y);
+}
+
 void Position::calc_v_xy(Position &prev) {
   v_x = (x - prev.x) / dt;
   v_y = (y - prev.y) / dt;
@@ -109,7 +113,15 @@ void Position::calc_theta(Position &prev) {
   theta = atan(dy / dx);
 }
 
+void Position::safety_adjust_v() {
+  if (v_total > 20.0) {
+    v_x = 20.0 * cos(theta);
+    v_y = 20.0 * sin(theta);
+    v_total = 20.0;
+  }
+}
+
 string Position::toString() {
-  return "x=" + to_string(x) + " / y=" + to_string(y) + " / v_x=" + to_string(v_x) + " / v_y=" + to_string(v_y);
+  return "x=" + to_string(x) + " / y=" + to_string(y) + " / v_x=" + to_string(v_x) + " / v_y=" + to_string(v_y) + " / v_total=" + to_string(v_total) + " / a_total=" + to_string(a_total);
 }
 
