@@ -15,9 +15,11 @@
 using namespace std;
 
 class Position {
-private:
+public:
   double x;
   double y;
+  double s;
+  double d;
   
   double v_total;
   double v_x;
@@ -27,20 +29,24 @@ private:
   double a_y;
   
   double theta;
+  double v_theta;
+  double a_theta;
   
   bool xy_init = false;
   bool v_xy_init = false;
   bool a_xy_init = false;
-  
-public:
-  double get_v_total();
+
   double get_x();
   double get_y();
   double get_v_x();
   double get_v_y();
+  double get_v_total();
   double get_a_x();
   double get_a_y();
+  double get_a_total();
   double get_theta();
+  double get_v_theta();
+  double get_a_theta();
   
   bool is_xy_init();
   bool is_v_xy_init();
@@ -58,6 +64,10 @@ public:
   void calc_a_total();
   void calc_a_xy(Position &prev);
   void calc_theta(Position &prev);
+  void calc_v_theta();
+  void calc_a_theta();
+  
+  void calc_sd(vector<double> maps_x, vector<double> maps_y);
   
   void safety_adjust_v();
   
