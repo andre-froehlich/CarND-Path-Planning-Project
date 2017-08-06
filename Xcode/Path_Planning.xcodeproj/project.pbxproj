@@ -74,6 +74,7 @@
 		0349DCFA1F2C8DF500E183FB /* helper.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = helper.hpp; path = src/helper.hpp; sourceTree = "<group>"; };
 		0349DCFB1F2C8DF500E183FB /* position.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = position.cpp; path = src/position.cpp; sourceTree = "<group>"; };
 		0349DCFC1F2C8DF500E183FB /* position.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = position.hpp; path = src/position.hpp; sourceTree = "<group>"; };
+		03AC17681F378C91000264FD /* spline.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = spline.h; path = src/spline.h; sourceTree = "<group>"; };
 		147C76F14A4B40AA8BDB39D3 /* CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
 		4CBC3F08DF02459B9736C5F1 /* main.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 4; name = main.cpp; path = src/main.cpp; sourceTree = SOURCE_ROOT; };
 		64841B68ED4B4333AEE3303C /* CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
@@ -146,6 +147,7 @@
 		AD4986BB62704606AE2C9B70 /* Source Files */ = {
 			isa = PBXGroup;
 			children = (
+				03AC17681F378C91000264FD /* spline.h */,
 				0349DCF71F2C8DF500E183FB /* car.cpp */,
 				0349DCF81F2C8DF500E183FB /* car.hpp */,
 				0349DCF91F2C8DF500E183FB /* helper.cpp */,

@@ -160,13 +160,13 @@ void Position::calc_theta(Position &prev) {
   theta = get_angle(dx, dy);
 }
 
+// Is this actually always the same as theta?
 void Position::calc_v_theta() {
-//  v_theta = atan(v_y / v_x);
   v_theta = get_angle(v_x, v_y);
 }
 
+// Is this really needed?
 void Position::calc_a_theta() {
-//  a_theta = atan(a_y / a_x);
   a_theta = get_angle(a_x, a_y);
 }
 

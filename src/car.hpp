@@ -22,7 +22,8 @@ enum State {
 
 struct Trajectory {
   vector<Position> pos;
-  double cost;
+  double cost = 0.0;
+  int prev_path_len;
 };
 
 class OtherCar {
@@ -73,11 +74,11 @@ public:
   vector<OtherCar> cars_right;
   
   // Creates a set of candidate trajectories.
-  void create_candidate_trajectories(Position start_pos, int no_points, long long start_time);
+  void create_candidate_trajectories(Position start_pos, int no_points, Position min_start_pos, int min_no_points, long long start_time);
   
   // Calculates a minimum jerk trajectory for the given inputs.
   Trajectory calculateTrajectory(Position start_pos, double target_d, double desired_v, int no_points);
-  Trajectory calculateFallbackTrajectory(Position start_pos, double desired_v, int no_points);
+  Trajectory calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points);
   
   // Calculates the cost for a given trajectory. Returns false, if trajectory is not feasible.
   bool evaluate_trajectory(Trajectory traj);

@@ -87,13 +87,15 @@ int main() {
   car.map_waypoints_y.clear();
   car.map_waypoints_s.clear();
   
-//  int spline_samples = 12000;
   for (double i = 0.0; i <= max_s; i+=0.5) {
     car.map_waypoints_x.push_back(spline_x(i));
     car.map_waypoints_y.push_back(spline_y(i));
     car.map_waypoints_s.push_back(i);
   }
   
+//  cout << "exp(3)=" << exp(3) << endl;
+  
+  /*
 //  double min_di = numeric_limits<double>::max();
 //  double min_s = 0;
 //  double min_d = 0;
@@ -114,6 +116,7 @@ int main() {
 //  }
 //  
 //  cout << endl << "Min s=" << min_s << " / min_d=" << min_d << " / min dist=" << min_di << endl;
+   */
   
 //  h.onMessage([&car.map_waypoints_x,&car.map_waypoints_y,&car.map_waypoints_s,&car.map_waypoints_dx,&car.map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
 //                                                                                                                           uWS::OpCode opCode) {
@@ -159,7 +162,6 @@ int main() {
           // Sensor Fusion Data, a list of all other cars on the same side of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
           
-          car.current_lane = getLane(car_d);
 //          car.other_cars.clear();
           
           car.car_in_lane_dist = numeric_limits<double>::max();
@@ -184,7 +186,7 @@ int main() {
                 
                 if (o.v_total <= speed_limit_real) {
                   car.car_in_lane = o;
-                  cout << o.toString() << endl;
+//                  cout << o.toString() << endl;
                 }
               }
             }
@@ -198,7 +200,6 @@ int main() {
           
           cout << "Cycle " << cycle_counter << ") Telemetry s=" << car_s << " / d=" << car_d << " / speed=" << car_speed
           << " / x=" << car_x << " / y=" << car_y << " / yaw=" << car_yaw << endl;
-          cout << "prev traj size=" << previous_path_x.size() << endl;
           
           vector<double> tx;
           vector<double> ty;
@@ -223,10 +224,12 @@ int main() {
             car.previous_trajectory.pos.clear();
 
             int prev_path_length = previous_path_x.size();
-//            cout << "Prev path length=" << prev_path_length << endl;
             
             Position start_pos;
+            Position min_start_pos;
             int no_points;
+            int min_no_points;
+            
             if (prev_path_length == 0) {
               start_pos.set_xy(car_x, car_y);
               start_pos.set_theta(car_yaw);
@@ -244,31 +247,48 @@ int main() {
               start_pos.set_a_xy(0.0, 0.0);          // we don't know, so we assume 0.0
               start_pos.set_v_total(car_speed);
               start_pos.calc_a_total();
+              
+              min_start_pos = start_pos;
+              
               car.previous_trajectory.pos.push_back(start_pos);
               no_points = desired_path_len;
+              min_no_points = desired_path_len;
+              
+              car.current_lane = getLane(car_d);
             } else {
               int limit = min(200, prev_path_length);
               no_points = desired_path_len - limit;
+              
               Position prevPos;
               for (int i=0; i<limit; i++) {
                 Position newPos;
                 newPos.set_xy(previous_path_x[i], previous_path_y[i]);
-                if (prevPos.is_xy_init()) {
-                  newPos.calc_v_xy(prevPos);
-                  newPos.calc_v_total();
-                  if (prevPos.is_v_xy_init()) {
-                    newPos.calc_a_xy(prevPos);
-                    newPos.calc_a_total();
-                  }
-                }
-
+                newPos.calc_v_xy(prevPos);
+                newPos.calc_v_total();
+                
+//                newPos.calc_a_xy(prevPos);
+//                newPos.calc_a_total();
+             
                 car.previous_trajectory.pos.push_back(newPos);
                 prevPos = newPos;
               }
               
               start_pos = prevPos;
               start_pos.calc_theta(car.previous_trajectory.pos[limit - 2]);
+              start_pos.calc_v_theta();
               start_pos.calc_sd(car.map_waypoints_x, car.map_waypoints_y);
+              
+              if (car.previous_trajectory.pos.size() >= 25) {
+                min_start_pos = car.previous_trajectory.pos[24];
+                min_no_points = 175;
+                min_start_pos.calc_theta(car.previous_trajectory.pos[23]);
+                min_start_pos.calc_v_theta();
+                min_start_pos.calc_sd(car.map_waypoints_x, car.map_waypoints_y);
+              } else {
+                min_start_pos = start_pos;
+                min_no_points = no_points;
+              }
+            
             }
             
 //            cout << "NP:" << no_points << endl;
@@ -285,7 +305,7 @@ int main() {
 //              }
 //            }
             
-            car.create_candidate_trajectories(start_pos, no_points, start_time);
+            car.create_candidate_trajectories(start_pos, no_points, min_start_pos, min_no_points, start_time);
           }
           
           tx = car.get_best_trajectory_x();
@@ -303,7 +323,7 @@ int main() {
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
           
           long long end_time = system_clock::now().time_since_epoch().count();
-          cout << "Cycle took " << (end_time - start_time) << "ms." << endl << endl;
+//          cout << "Cycle took " << (end_time - start_time) << "ms." << endl << endl;
         }
       } else {
         // Manual driving
