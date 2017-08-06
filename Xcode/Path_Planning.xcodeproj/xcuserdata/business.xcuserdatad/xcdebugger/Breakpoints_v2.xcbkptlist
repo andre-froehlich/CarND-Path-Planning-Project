@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "src/car.cpp"
-            timestampString = "523714071.518457"
+            timestampString = "523716298.990858"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "498"
-            endingLineNumber = "498"
+            startingLineNumber = "381"
+            endingLineNumber = "381"
             landmarkName = "Car::create_candidate_trajectories(Position start_pos, int no_points)"
             landmarkType = "7">
          </BreakpointContent>

@@ -16,6 +16,7 @@
 //#include "othercar.hpp"
 
 using namespace std;
+using namespace std::chrono;
 
 // for convenience
 using json = nlohmann::json;
@@ -129,6 +130,8 @@ int main() {
       auto s = hasData(data);
 
       if (s != "") {
+        long long start_time = system_clock::now().time_since_epoch().count();
+        
         auto j = json::parse(s);
         
         string event = j[0].get<string>();
@@ -245,9 +248,7 @@ int main() {
               no_points = desired_path_len;
             } else {
               int limit = min(200, prev_path_length);
-//              int limit = prev_path_length;
               no_points = desired_path_len - limit;
-//              cout << "limit=" << limit << endl;
               Position prevPos;
               for (int i=0; i<limit; i++) {
                 Position newPos;
@@ -284,14 +285,12 @@ int main() {
 //              }
 //            }
             
-            car.create_candidate_trajectories(start_pos, no_points);
-            
+            car.create_candidate_trajectories(start_pos, no_points, start_time);
           }
           
           tx = car.get_best_trajectory_x();
           ty = car.get_best_trajectory_y();
           
-          cout << endl;
           
 //          for (int i=0; i < tx.size(); i++) {
 //            cout << "x=" << tx[i] << " / y=" << ty[i] << endl;
@@ -301,12 +300,10 @@ int main() {
           msgJson["next_y"] = ty;
           
           auto msg = "42[\"control\","+ msgJson.dump()+"]";
-          
-          //this_thread::sleep_for(chrono::milliseconds(1000));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
           
-          cout << endl;
-          
+          long long end_time = system_clock::now().time_since_epoch().count();
+          cout << "Cycle took " << (end_time - start_time) << "ms." << endl << endl;
         }
       } else {
         // Manual driving

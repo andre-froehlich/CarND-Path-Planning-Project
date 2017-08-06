@@ -73,7 +73,7 @@ public:
   vector<OtherCar> cars_right;
   
   // Creates a set of candidate trajectories.
-  void create_candidate_trajectories(Position start_pos, int no_points);
+  void create_candidate_trajectories(Position start_pos, int no_points, long long start_time);
   
   // Calculates a minimum jerk trajectory for the given inputs.
   Trajectory calculateTrajectory(Position start_pos, double target_d, double desired_v, int no_points);

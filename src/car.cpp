@@ -349,7 +349,7 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
   return result;
 }
 
-void Car::create_candidate_trajectories(Position start_pos, int no_points) {
+void Car::create_candidate_trajectories(Position start_pos, int no_points, long long start_time) {
 //  cout << start_pos.toString() << endl;
   
   candidate_trajectories.clear();
@@ -357,6 +357,8 @@ void Car::create_candidate_trajectories(Position start_pos, int no_points) {
   // Calculate trajectory without lane change
   Trajectory traj;
   double desired_speed;
+  
+  /*
 //  if (car_in_lane_dist < 5.0) {
 //    desired_speed = 0.0;
 //  } else if (car_in_lane_dist < 50.0) {
@@ -365,7 +367,7 @@ void Car::create_candidate_trajectories(Position start_pos, int no_points) {
 //    desired_speed = speed_limit;
 //  }
 //  traj = calculateTrajectory(start_pos, current_lane, desired_speed, no_points);
-  
+  */
   
   if (car_in_lane_dist < 50.0) {
     desired_speed = car_in_lane.v_total;
