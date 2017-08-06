@@ -246,8 +246,6 @@ Trajectory Car::calculateTrajectory(Position start_pos, double target_d, double 
   }
   
   cout << "Finished" << endl;
-  
-//  exit(2);
 
   return result;
 }
@@ -299,9 +297,6 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
   double T = dt * no_points;
   double target_total_v = min(desired_v, start_pos.get_v_total() + max_a * T);
   
-  cout << "target_tota_v=" << target_total_v << " / desired_v=" << desired_v << " / no_points=" << no_points << endl;
-  cout << "Start_pos: " << start_pos.toString() << endl;
-  
   Position prevPos = start_pos;
   for (int i=0; i<no_points; i++) {
     
@@ -314,41 +309,14 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
     
     Position newPos;
     double new_s = prevPos.s + new_v * dt;
-    newPos.calc_xy(new_s, prevPos.d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+    newPos.calc_xy(new_s, getLane(prevPos.d), map_waypoints_s, map_waypoints_x, map_waypoints_y);
     newPos.calc_v_xy(prevPos);
     newPos.calc_v_theta();
-    
-//    newPos.calc_v_total();
-//    newPos.calc_a_xy(prevPos);
-//    newPos.calc_a_total();
-    
-    
-//    Position corrected_pos;
-    
-    /*
-    // Speed check
-    bool invalid = (newPos.get_v_total() > target_total_v);
-    
-    // Acceleration check
-    if (!invalid) {
-      newPos.calc_a_xy(prevPos);
-      newPos.calc_a_total();
-      invalid = (newPos.get_a_total() > 5.0);
-    }
-    
-    invalid = true;
-     */
     
     double new_v_theta = newPos.get_v_theta();
     bool invalid;
     do {
       invalid = false;
-      
-      /*
-//      double m = (newPos.get_v_y() - prevPos.get_v_y()) / (newPos.get_v_x() - prevPos.get_v_x());
-//      double vy = new_v * m / sqrt(1 + m * m);
-//      double vx = vy / m;
-       */
       
       double vx = new_v * sin(new_v_theta);
       double vy = new_v * cos(new_v_theta);
@@ -370,124 +338,9 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
         invalid = true;
         double d_v_theta = newPos.get_v_theta() - prevPos.get_v_theta();
         new_v_theta = newPos.get_v_theta() - d_v_theta * 0.9;
-        
-        cout << "*NO PUSH:: " << newPos.toString() << endl;
-//        exit(6);
       }
       
     } while (invalid);
-    
-    cout << "    PUSH:: " << newPos.toString() << endl;
-    
-    /*
-    if (invalid) {
-      double m = (newPos.get_v_y() - prevPos.get_v_y()) / (newPos.get_v_x() - prevPos.get_v_x());
-      double vy = new_v * m / sqrt(1 + m * m);
-      double vx = vy / m;
-      
-      double corrected_x = prevPos.get_x() + vx * dt;
-      double corrected_y = prevPos.get_y() + vy * dt;
-      
-      // Check?
-      corrected_pos.set_xy(corrected_x, corrected_y);
-      corrected_pos.v_total = new_v;
-      corrected_pos.calc_theta(prevPos);
-      corrected_pos.calc_sd(map_waypoints_x, map_waypoints_y);
-      
-      // Check a_total
-      corrected_pos.calc_v_xy(prevPos);
-      corrected_pos.calc_a_xy(prevPos);
-      corrected_pos.calc_a_total();
-      
-      cout << "    PUSH:: " << corrected_pos.toString() << endl;
-      
-      
-      
-      if (corrected_pos.get_a_total() > 8.0) {
-        cout << "*** a_total check failed = " << corrected_pos.get_a_total() << endl;
-     
-        exit(7);
-      }
-      
-    } else {
-      corrected_pos = newPos;
-    }
-     */
-    /*
-    double last_x = prevPos.get_x();
-    double last_y = prevPos.get_y();
-    bool is_pos_invalid;
-    double lower_v = new_v - 0.5;
-    double upper_v = new_v + 0.5;
-    bool is_continuous = true;
-    
-    
-    do {
-      is_pos_invalid = false;
-      double new_s = prevPos.s + new_v * dt;
-      if (is_continuous) {
-        newPos.calc_xy(new_s, prevPos.d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-      } else {
-        newPos.set_xy((newPos.get_x() + last_x) / 2.0, (newPos.get_y() + last_y) / 2.0);
-      }
-      
-      newPos.calc_v_xy(prevPos);
-      newPos.calc_v_total();
-      
-      double a_total = (newPos.get_v_total() - prevPos.get_v_total()) / dt;
-      
-      cout << "CHECKING:: " << newPos.toString() << " / a_total=" << a_total << endl;
-      cout << "lower_v=" << lower_v << " / new_v=" << new_v << " upper_v=" << upper_v << endl;
-      
-      // Acceleration check
-      bool is_braking = (a_total < 0.0);
-      if (fabs(a_total) > 8.0) {
-        cout << "*** ACC Test failed and is ";
-        if (is_braking) {
-          cout << "braking" << endl;
-          lower_v = new_v;
-        } else {
-          cout << "accelerating" << endl;
-          upper_v = new_v;
-        }
-        is_pos_invalid = true;
-      }
-      
-      // Speed check
-      if (!is_pos_invalid && !is_braking && (newPos.get_v_total() > target_total_v)) {
-        cout << "*** Speed test failed" << endl;
-        upper_v = new_v;
-        is_pos_invalid = true;
-      }
-      
-      if (!is_continuous) {
-        break;
-      }
-      
-      new_v = (lower_v + upper_v) / 2.0;
-      
-      if (fabs(lower_v - upper_v) < 0.001) {
-        is_continuous = false;
-        cout << "DISCONTINOUS" << endl;
-        break;
-      } else {
-        last_x = newPos.get_x();
-        last_y = newPos.get_y();
-      }
-      
-    } while (is_pos_invalid);
-    
-    if (is_pos_invalid) {
-      cout << "Still invalid!!!" << endl;
-      double nx = prevPos.get_x() + prevPos.get_v_x() * dt;
-      double ny = prevPos.get_y() + prevPos.get_v_y() * dt;
-      newPos.set_xy(nx, ny);
-      newPos.calc_v_xy(prevPos);
-      newPos.calc_v_total();
-      newPos.calc_sd(map_waypoints_x, map_waypoints_y);
-//      exit(6);
-    }*/
-    
     
     result.pos.push_back(newPos);
     prevPos = newPos;
@@ -504,25 +357,24 @@ void Car::create_candidate_trajectories(Position start_pos, int no_points) {
   // Calculate trajectory without lane change
   Trajectory traj;
   double desired_speed;
-  if (car_in_lane_dist < 5.0) {
-    desired_speed = 0.0;
-  } else if (car_in_lane_dist < 50.0) {
-    desired_speed = 0.46666666667 * car_in_lane_dist - 2.3333333333;
+//  if (car_in_lane_dist < 5.0) {
+//    desired_speed = 0.0;
+//  } else if (car_in_lane_dist < 50.0) {
+//    desired_speed = 0.46666666667 * car_in_lane_dist - 2.3333333333;
+//  } else {
+//    desired_speed = speed_limit;
+//  }
+//  traj = calculateTrajectory(start_pos, current_lane, desired_speed, no_points);
+  
+  
+  if (car_in_lane_dist < 50.0) {
+    desired_speed = car_in_lane.v_total;
+  } else if (car_in_lane_dist < 25.0) {
+    desired_speed = car_in_lane.v_total - 1.0;
   } else {
     desired_speed = speed_limit;
   }
-//  traj = calculateTrajectory(start_pos, current_lane, desired_speed, no_points);
   traj = calculateFallbackTrajectory(start_pos, desired_speed, no_points);
-  
-
-  
-//  if (car_in_lane_dist < 25.0) {
-//    traj = calculateTrajectory(start_pos, current_lane, car_in_lane.v_total - 4.0, no_points);
-//  } else if (car_in_lane_dist < 50.0) {
-//    traj = calculateTrajectory(start_pos, current_lane, car_in_lane.v_total - 1.0, no_points);
-//  } else {
-//    traj = calculateTrajectory(start_pos, current_lane, speed_limit, no_points);
-//  }
   
   best_trajectory = traj;
   
