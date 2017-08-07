@@ -24,11 +24,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "src/car.cpp"
-            timestampString = "523750638.319911"
+            timestampString = "523806166.687012"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "244"
-            endingLineNumber = "244"
+            startingLineNumber = "245"
+            endingLineNumber = "245"
             landmarkName = "Car::calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points)"
             landmarkType = "7">
          </BreakpointContent>

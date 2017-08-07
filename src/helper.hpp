@@ -16,14 +16,16 @@
 using namespace std;
 
 const double max_s = 6945.554;
+const double half_max_s = max_s / 2.0;
 const double speed_limit_real = 22.3; // in m/s, it's a bit less than 50mph
 const double speed_limit = 22.0;      // for trajectory calculation purposes
 const double a_max = 8.0;
 const double dt = 0.02;
 const double conv_mph2ms = 0.44704;
-const int desired_path_len = 200;
+const int desired_path_len = 100;
 const double min_dist_other = 10.0;
 const double safe_dist = 50.0;
+const double lane_change_safe_dist = 50.0;
 
 constexpr double pi();
 double deg2rad(double x);

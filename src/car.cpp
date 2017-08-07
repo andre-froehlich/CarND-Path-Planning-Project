@@ -66,8 +66,7 @@ string OtherCar::toString() {
   to_string(vx) + " / vy=" + to_string(vy) + " / s=" + to_string(s) + " / d=" + to_string(d);
 }
 
-
-int max_trajectory_length = 200;
+//int max_trajectory_length = 200;
 vector<double> Car::get_best_trajectory_x() {
   vector<double> result;
   
@@ -237,6 +236,8 @@ void printTrajectory(Trajectory t) {
 int debug_counter = 1;
 
 Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points) {
+  assert(desired_d >= 1.5 && desired_d <= 10.5);
+  
   debug_counter++;
   
   bool debug = (debug_counter == -3);
@@ -247,6 +248,7 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
   
   Trajectory result;
   result.prev_path_len = desired_path_len - no_points;
+  result.target_lane = getLane(desired_d);
   
   const double max_a = 3.0;
   double T = dt * no_points;
@@ -264,7 +266,7 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
     
     double delta_d = desired_d - prevPos.d;
     if (fabs(delta_d) > 0.1) {
-      new_d = prevPos.d + delta_d * 0.1;
+      new_d = prevPos.d + delta_d * 0.02;
     } else {
       new_d = prevPos.d;
     }
@@ -329,16 +331,76 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
 }
 
 void Car::create_candidate_trajectories(Position start_pos, int no_points, Position min_start_pos, int min_no_points, long long start_time) {
-//  cout << start_pos.toString() << endl;
+  debug_counter++;
+//  best_trajectory.pos.clear();
   
+  cout << "Current Lane=" << current_lane << " / Target Lane=" << target_lane;
+  cout << " / no_points=" << no_points << endl;
+  cout << "change_left_blocked=" << change_left_blocked << " / change_right_blocked=" << change_right_blocked << endl;
+  
+  cout << "Car ahead: " << target_lane_car_ahead.toString() << " / dist=" << target_lane_car_ahead_dist << endl;
+  cout << "Car left : " << target_left_lane_car_ahead.toString() << " / dist=" << target_left_lane_car_ahead_dist << endl;
+  cout << "Car right: " << target_right_lane_car_ahead.toString() << " / dist=" << target_right_lane_car_ahead_dist << endl;
+  
+  // TODO: Adjust speed
+  double target_d;
+  double target_v;
+  if (current_lane != target_lane) {  // in between lanes, finish previous trajectory
+    target_d = target_lane;
+    if (target_lane_car_ahead_dist < 50.0) {
+      target_v = target_lane_car_ahead.v_total - 1.0;
+    } else {
+      target_v = speed_limit;
+    }
+//    best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane, no_points);
+  } else {
+    if (target_lane_car_ahead_dist > 100.0) {   // no car ahead, just keep lane
+      target_d = target_lane;
+      target_v = speed_limit;
+//      best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane, no_points);
+    } else {                          // car ahead
+      if (!change_right_blocked) {
+        target_d = target_lane + 4;
+        if (target_right_lane_car_ahead_dist < 50.0) {
+          target_v = target_right_lane_car_ahead.v_total - 1.0;
+        } else {
+          target_v = speed_limit;
+        }
+//        best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane + 4, no_points);
+      } else if (!change_left_blocked) {
+        target_d = target_lane - 4;
+        if (target_left_lane_car_ahead_dist < 50.0) {
+          target_v = target_left_lane_car_ahead.v_total - 1.0;
+        } else {
+          target_v = speed_limit;
+        }
+//        best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane - 4, no_points);
+      } else {
+        target_d = target_lane;
+        if (target_lane_car_ahead_dist < 50.0) {
+          target_v = target_lane_car_ahead.v_total - 1.0;
+        } else {
+          target_v = speed_limit;
+        }
+//        best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane, no_points);
+      }
+    }
+  }
+  
+  best_trajectory = calculateFallbackTrajectory(start_pos, target_v, target_d, no_points);
+  
+  if (best_trajectory.pos.size() == 0) exit(13);
+  
+  
+  /*
   candidate_trajectories.clear();
   
   // Calculate trajectory without lane change
   double desired_speed;
   
-  if (car_in_lane_dist < 50.0) {
+  if (car_in_lane_dist < 100.0) {
     desired_speed = car_in_lane.v_total;
-  } else if (car_in_lane_dist < 25.0) {
+  } else if (car_in_lane_dist < 50.0) {
     desired_speed = car_in_lane.v_total - 1.0;
   } else {
     desired_speed = speed_limit;
@@ -347,23 +409,32 @@ void Car::create_candidate_trajectories(Position start_pos, int no_points, Posit
 
   Trajectory traj;
   
-  Lane desired_lane = current_lane;
-  if (car_in_lane_dist < 200.0) {
-    if (current_lane == MIDDLE) {
-      desired_lane = LEFT;
-    } else {
-      desired_lane = MIDDLE;
-    }
-    traj = calculateFallbackTrajectory(min_start_pos, desired_speed, desired_lane, min_no_points);
+  if (debug_counter == 6) {
+    traj = calculateFallbackTrajectory(min_start_pos, desired_speed, Lane::RIGHT, min_no_points);
+  } else if (debug_counter >= 35 && debug_counter<50) {
+    traj = calculateFallbackTrajectory(min_start_pos, desired_speed, Lane::LEFT, min_no_points);
   } else {
-    traj = calculateFallbackTrajectory(min_start_pos, desired_speed, desired_lane, min_no_points);
+    traj = calculateFallbackTrajectory(start_pos, desired_speed, current_lane, no_points);
   }
+  
+//  Lane desired_lane = current_lane;
+//  if (car_in_lane_dist < 200.0) {
+//    if (current_lane == MIDDLE) {
+//      desired_lane = LEFT;
+//    } else {
+//      desired_lane = MIDDLE;
+//    }
+//    traj = calculateFallbackTrajectory(min_start_pos, desired_speed, desired_lane, min_no_points);
+//  } else {
+//    traj = calculateFallbackTrajectory(min_start_pos, desired_speed, desired_lane, min_no_points);
+//  }
 
   best_trajectory = traj;
+   */
   
-  // Set current lane
-  Position last_pos = best_trajectory.pos[best_trajectory.pos.size() - 1];
-  last_pos.calc_sd(map_waypoints_x, map_waypoints_y);
-  current_lane = getLane(last_pos.d);
+  // Set target lane
+  target_lane = best_trajectory.target_lane;
+  
+  cout << endl;
 }
 

@@ -16,12 +16,13 @@
 
 using namespace std;
 
-enum State {
-  STAY, CL, CR
-};
+//enum State {
+//  STAY, CHANGE_LEFT, CHANGE_RIGHT
+//};
 
 struct Trajectory {
   vector<Position> pos;
+  Lane target_lane;
   double cost = 0.0;
   int prev_path_len;
 };
@@ -55,7 +56,9 @@ public:
 //  Car() {}
   
   Lane current_lane = MIDDLE;
-  State current_state = STAY;
+  Lane target_lane = MIDDLE;
+  
+//  State current_state = STAY;
   
   Trajectory previous_trajectory;
   Trajectory best_trajectory;
@@ -67,11 +70,16 @@ public:
   vector<double> map_waypoints_dx;
   vector<double> map_waypoints_dy;
   
-  OtherCar car_in_lane;
-  double car_in_lane_dist;
+  OtherCar target_lane_car_ahead;
+  double target_lane_car_ahead_dist;
   
-  vector<OtherCar> cars_left;
-  vector<OtherCar> cars_right;
+  OtherCar target_left_lane_car_ahead;
+  bool change_left_blocked;
+  double target_left_lane_car_ahead_dist;
+  
+  OtherCar target_right_lane_car_ahead;
+  bool change_right_blocked;
+  double target_right_lane_car_ahead_dist;
   
   // Creates a set of candidate trajectories.
   void create_candidate_trajectories(Position start_pos, int no_points, Position min_start_pos, int min_no_points, long long start_time);

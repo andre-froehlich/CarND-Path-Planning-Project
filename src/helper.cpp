@@ -172,13 +172,13 @@ vector<double> JMT(vector<double> start, vector<double> end, double T) {
 }
 
 Lane getLane(double d) {
-  if (d >= 0.0 && d<4.0) {
+  if (d >= 1.5 && d<=2.5) {
     return Lane::LEFT;
   }
-  if (d>4.0 && d<8.0) {
+  if (d >= 5.5 && d <= 6.5) {
     return Lane::MIDDLE;
   }
-  if (d>=8.0 && d<=10.0) {
+  if (d >= 9.5 && d <= 10.5) {
     return Lane::RIGHT;
   }
   return Lane::NONE;

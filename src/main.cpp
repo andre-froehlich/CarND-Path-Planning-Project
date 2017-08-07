@@ -162,8 +162,14 @@ int main() {
           // Sensor Fusion Data, a list of all other cars on the same side of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
           
-//          car.other_cars.clear();
+          car.current_lane = getLane(car_d);
           
+
+          
+          
+        
+          
+          /*
           car.car_in_lane_dist = numeric_limits<double>::max();
           
           for (int i=0; i<sensor_fusion.size(); i++) {
@@ -177,14 +183,14 @@ int main() {
             double s = c[5];
             double d = c[6];
             
-            if (getLane(d) == car.current_lane) {
+            if (getLane(d) == car.target_lane) {
               double dist_s = get_dist_s(car_s, s);
               
               if (dist_s < safe_dist && dist_s < car.car_in_lane_dist) {
                 car.car_in_lane_dist = dist_s;
                 OtherCar o(id, x, y, vx, vy, s, d, car.map_waypoints_s, car.map_waypoints_x, car.map_waypoints_y);
                 
-                if (o.v_total <= speed_limit_real) {
+                if (o.v_total <= speed_limit) {
                   car.car_in_lane = o;
 //                  cout << o.toString() << endl;
                 }
@@ -192,6 +198,7 @@ int main() {
             }
 
           }
+           */
           
 
           json msgJson;
@@ -219,6 +226,109 @@ int main() {
 //            car.best_trajectory.pos.push_back(p2);
             */
           } else {
+            
+            // Unpack sensor fusion
+            car.change_left_blocked = false;
+            car.change_right_blocked = false;
+            if (car.target_lane == Lane::LEFT) {
+              car.change_left_blocked = true;
+            } else if (car.target_lane == Lane::RIGHT) {
+              car.change_right_blocked = true;
+            }
+            car.target_lane_car_ahead_dist = numeric_limits<double>::max();
+            car.target_left_lane_car_ahead_dist = numeric_limits<double>::max();
+            car.target_right_lane_car_ahead_dist = numeric_limits<double>::max();
+            
+            cout << "Iterating sensor fusion: target_lane=" << car.target_lane << endl;
+            cout << "change_left_blocked=" << car.change_left_blocked << " / change_right_blocked=" << car.change_right_blocked << endl;
+            
+            for (int i=0; i<sensor_fusion.size(); i++) {
+              auto c = sensor_fusion[i];
+              int id = c[0];
+              double x = c[1];
+              double y = c[2];
+              double vx = c[3];
+              double vy = c[4];
+              double s = c[5];
+              double d = c[6];
+              
+              if (d < -2.0 || d > 12) continue;
+              
+              OtherCar other = OtherCar(id, x, y, vx, vy, s, d, car.map_waypoints_s, car.map_waypoints_x, car.map_waypoints_y);
+              cout << other.toString() << endl;
+              
+              bool occupies_left = (d <= 5.5);
+              bool occupies_middle = ((d >= 2.5) && (d <= 9.5));
+              bool occupies_right = (d >= 6.5);
+              
+              cout << "occupies left=" << occupies_left << " / middle=" << occupies_middle << " / right=" << occupies_right << endl;
+              
+              double ds = s - car_s;
+              if (ds < -half_max_s) {
+                ds += max_s;
+              }
+              if (ds > half_max_s) {
+                ds -= max_s;
+              }
+              cout << "ds=" << ds << endl;
+              
+              bool is_in_blocking_dist = fabs(ds) < lane_change_safe_dist;
+              
+              if (car.target_lane == Lane::LEFT) {
+                if (occupies_left && ds > 0 && ds < car.target_lane_car_ahead_dist) {
+                  car.target_lane_car_ahead_dist = ds;
+                  car.target_lane_car_ahead = other;
+                }
+                if (occupies_middle) {
+                  if (is_in_blocking_dist) {
+                    car.change_right_blocked = true;
+                  } else if (ds > 0 && ds < car.target_right_lane_car_ahead_dist) {
+                    car.target_right_lane_car_ahead_dist = ds;
+                    car.target_right_lane_car_ahead = other;
+                  }
+                }
+              }
+              
+              if (car.target_lane == Lane::MIDDLE) {
+                if (occupies_left) {
+                  if (is_in_blocking_dist) {
+                    car.change_left_blocked = true;
+                  } else if (ds > 0 && ds < car.target_left_lane_car_ahead_dist) {
+                    car.target_left_lane_car_ahead_dist = ds;
+                    car.target_left_lane_car_ahead = other;
+                  }
+                }
+                if (occupies_middle && ds > 0 && ds < car.target_lane_car_ahead_dist) {
+                  car.target_lane_car_ahead_dist = ds;
+                  car.target_lane_car_ahead = other;
+                }
+                if (occupies_right) {
+                  if (is_in_blocking_dist) {
+                    car.change_right_blocked = true;
+                  } else if (ds > 0 && ds < car.target_right_lane_car_ahead_dist) {
+                    car.target_right_lane_car_ahead_dist = ds;
+                    car.target_right_lane_car_ahead = other;
+                  }
+                }
+              }
+              
+              if (car.target_lane == Lane::RIGHT) {
+                if (occupies_right && ds > 0 && ds < car.target_lane_car_ahead_dist) {
+                  car.target_lane_car_ahead_dist = ds;
+                  car.target_lane_car_ahead = other;
+                }
+                if (occupies_middle) {
+                  if (is_in_blocking_dist) {
+                    car.change_left_blocked = true;
+                  } else if (ds > 0 && ds < car.target_left_lane_car_ahead_dist) {
+                    car.target_left_lane_car_ahead_dist = ds;
+                    car.target_left_lane_car_ahead = other;
+                  }
+                }
+              }
+              
+              cout << "change_left_blocked=" << car.change_left_blocked << " / change_right_blocked=" << car.change_right_blocked << endl;
+            }
           
             car.best_trajectory.pos.clear();
             car.previous_trajectory.pos.clear();
@@ -256,7 +366,7 @@ int main() {
               
               car.current_lane = getLane(car_d);
             } else {
-              int limit = min(200, prev_path_length);
+              int limit = min(desired_path_len, prev_path_length);
               no_points = desired_path_len - limit;
               
               Position prevPos;
