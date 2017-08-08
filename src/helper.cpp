@@ -18,9 +18,9 @@ using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-constexpr double pi() { return M_PI; }
-double deg2rad(double x) { return x * pi() / 180; }
-double rad2deg(double x) { return x * 180 / pi(); }
+//constexpr double pi() { return M_PI; }
+double deg2rad(double x) { return x * M_PI / 180; }
+double rad2deg(double x) { return x * 180 / M_PI; }
 
 double distance(double x1, double y1, double x2, double y2)
 {
@@ -61,7 +61,7 @@ int NextWaypoint(double x, double y, double theta, vector<double> maps_x, vector
   
   double angle = abs(theta-heading);
   
-  if(angle > pi()/4)
+  if(angle > M_PI/4)
   {
     closestWaypoint++;
   }
@@ -134,7 +134,7 @@ vector<double> getXY(double s, double d, vector<double> maps_s, vector<double> m
   double seg_x = maps_x[prev_wp]+seg_s*cos(heading);
   double seg_y = maps_y[prev_wp]+seg_s*sin(heading);
   
-  double perp_heading = heading-pi()/2;
+  double perp_heading = heading-M_PI/2;
   
   double x = seg_x + d*cos(perp_heading);
   double y = seg_y + d*sin(perp_heading);
@@ -172,13 +172,13 @@ vector<double> JMT(vector<double> start, vector<double> end, double T) {
 }
 
 Lane getLane(double d) {
-  if (d >= 1.5 && d<=2.5) {
+  if (/*d >= 1.5 && */d<=2.5) {
     return Lane::LEFT;
   }
   if (d >= 5.5 && d <= 6.5) {
     return Lane::MIDDLE;
   }
-  if (d >= 9.5 && d <= 10.5) {
+  if (d >= 9.5 /*&& d <= 10.5*/) {
     return Lane::RIGHT;
   }
   return Lane::NONE;

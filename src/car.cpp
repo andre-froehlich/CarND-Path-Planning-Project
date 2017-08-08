@@ -7,13 +7,15 @@
 //
 
 #include <iostream>
-#include <algorithm>
+//#include <algorithm>
+#include <chrono>
 #include "helper.hpp"
 #include "car.hpp"
 #include "position.hpp"
 #include "spline.h"
 
 using namespace std;
+using namespace std::chrono;
 
 OtherCar::OtherCar(int id, double x, double y, double vx, double vy, double s, double d, vector<double> &maps_s, vector<double> &maps_x, vector<double> &maps_y) {
   this->id = id;
@@ -235,12 +237,12 @@ void printTrajectory(Trajectory t) {
 
 int debug_counter = 1;
 
-Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points) {
+Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points, long long start_time) {
   assert(desired_d >= 1.5 && desired_d <= 10.5);
   
   debug_counter++;
   
-  bool debug = (debug_counter == -3);
+  bool debug = true;
   if (debug) {
     cout << "start_pos: " << start_pos.toString() << endl;
     cout << "desired_v=" << desired_v << " / desired_d=" << desired_d << endl;
@@ -250,23 +252,23 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
   result.prev_path_len = desired_path_len - no_points;
   result.target_lane = getLane(desired_d);
   
+  if (result.target_lane == Lane::NONE && debug) {
+    cout << "target_lane=" << result.target_lane << endl;
+    exit(17);
+  }
+  
   const double max_a = 3.0;
   double T = dt * no_points;
   double target_total_v = min(desired_v, start_pos.get_v_total() + max_a * T);
   
-  // Determine k parameters for d change logistic function
-//  const double k = (2 / T) * log(desired_d / start_pos.d - 1.0);
-//  const double delta_d = desired_d - start_pos.d;
-  
   Position prevPos = start_pos;
+  bool invalid;
   for (double t = dt; t <= T; t+=dt) {
     double new_d;
-//    double new_d = delta_d / (1 + exp(k * (t - T /2))) + start_pos.d;
-    //    double new_d = start_pos.d;
     
     double delta_d = desired_d - prevPos.d;
     if (fabs(delta_d) > 0.1) {
-      new_d = prevPos.d + delta_d * 0.02;
+      new_d = prevPos.d + delta_d * 0.04;
     } else {
       new_d = prevPos.d;
     }
@@ -279,7 +281,7 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
     }
     
     if (debug) {
-      cout << "start_pos: " << prevPos.toString() << endl;
+      cout << "prev_pos: " << prevPos.toString() << endl;
       cout << "new_d=" << new_d << " / new_v=" << new_v << endl;
     }
     
@@ -290,9 +292,15 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
     newPos.calc_v_theta();
     
     double new_v_theta = newPos.get_v_theta();
-    bool invalid;
+    
+    int invalid_counter = 0;
+//    int a_check_failed_counter = 0;
     do {
       invalid = false;
+      
+//      if (invalid_counter > 1) {
+//        new_v_theta = prevPos.get_v_theta();
+//      }
       
       if (debug) {
         cout << "new_v_theta=" << new_v_theta << endl;
@@ -314,35 +322,115 @@ Trajectory Car::calculateFallbackTrajectory(Position start_pos, double desired_v
       newPos.calc_a_xy(prevPos);
       newPos.calc_a_total();
       
-      if (fabs(newPos.get_a_total()) > 8.0) {
+      if (fabs(newPos.get_a_total()) > 9.9) {
+        if (debug) cout << "++++ Adjust angle: a_total=" << newPos.get_a_total() <<" / prevTheta=" << prevPos.get_v_theta() << " / newTheta=" << newPos.get_v_theta();
+        
         invalid = true;
         double d_v_theta = newPos.get_v_theta() - prevPos.get_v_theta();
-        new_v_theta = newPos.get_v_theta() - d_v_theta * 0.9;
+        
+        if (d_v_theta >= (-2 * M_PI) && d_v_theta < (-M_PI)) {
+          // reduce new_v_theta, d_v_theta negative
+          new_v_theta += (d_v_theta * 0.9);
+        } else if (d_v_theta >= (-M_PI) && d_v_theta < 0.0) {
+          // inc new_v_theta, d_v_theta negative
+          new_v_theta -= (d_v_theta * 0.9);
+        } else if (d_v_theta >= 0.0 && d_v_theta < M_PI) {
+          // reduce new_v_theta, d_v_theta positive
+          new_v_theta -= (d_v_theta * 0.9);
+        } else if (d_v_theta >= M_PI && d_v_theta < (2 * M_PI)) {
+          // inc new_v_theta, d_v_theta positive
+          new_v_theta += (d_v_theta * 0.9);
+        } else {
+          cout << "This should not happen. Check normalization of thetas" << endl;
+          exit(18);
+        }
+        
+        if (debug) cout << " / d_v_theta=" << d_v_theta << " / new_v_theta=" << new_v_theta << endl;
+        
+        /*
+//        a_check_failed_counter++;
+        if (a_check_failed_counter > 10) {
+          cout << "**** Reducing speed" << endl;
+          new_v *= 0.98;
+          a_check_failed_counter = 0;
+        }
+         */
+      }
+      
+      invalid_counter++;
+      if (invalid_counter > 100) {
+        cout << "!!!!!!! Giving up - no traj found!" << endl;
+        break;
+      }
+      
+      long long current_time = system_clock::now().time_since_epoch().count();
+      long long duration = current_time - start_time;
+      if (debug) cout << "Duration=" << duration << endl;
+      
+      if (duration > 100000) {
+        cout << "Stopping due to time constraint. result size=" << result.pos.size() << endl;
+        return result;
       }
       
     } while (invalid);
+    
+    if (debug) cout << "Invalid counter=" << invalid_counter << endl;
+    
+    if (invalid) break;
     
     result.pos.push_back(newPos);
     prevPos = newPos;
   }
   
-  result.cost = numeric_limits<double>::max() / 2.0;
+  if (invalid) {
+    result.cost = numeric_limits<double>::max();
+    result.pos.clear();
+    exit(14);
+  } else {
+    result.cost = numeric_limits<double>::max() / 2.0;
+  }
+  
   return result;
 }
 
 void Car::create_candidate_trajectories(Position start_pos, int no_points, Position min_start_pos, int min_no_points, long long start_time) {
+  if (start_pos.d <0 || start_pos.d > 12) {
+    cout << "start_pos.d=" << start_pos.d << " / target_lane=" << target_lane << endl;
+    exit(16);
+  }
+  
   debug_counter++;
-//  best_trajectory.pos.clear();
   
-  cout << "Current Lane=" << current_lane << " / Target Lane=" << target_lane;
-  cout << " / no_points=" << no_points << endl;
-  cout << "change_left_blocked=" << change_left_blocked << " / change_right_blocked=" << change_right_blocked << endl;
+//  cout << "Current Lane=" << current_lane << " / Target Lane=" << target_lane;
+//  cout << " / no_points=" << no_points << endl;
+//  cout << "change_left_blocked=" << change_left_blocked << " / change_right_blocked=" << change_right_blocked << endl;
+//  
+//  cout << "Car ahead: " << target_lane_car_ahead.toString() << " / dist=" << target_lane_car_ahead_dist << endl;
+//  cout << "Car left : " << target_left_lane_car_ahead.toString() << " / dist=" << target_left_lane_car_ahead_dist << endl;
+//  cout << "Car right: " << target_right_lane_car_ahead.toString() << " / dist=" << target_right_lane_car_ahead_dist << endl;
   
-  cout << "Car ahead: " << target_lane_car_ahead.toString() << " / dist=" << target_lane_car_ahead_dist << endl;
-  cout << "Car left : " << target_left_lane_car_ahead.toString() << " / dist=" << target_left_lane_car_ahead_dist << endl;
-  cout << "Car right: " << target_right_lane_car_ahead.toString() << " / dist=" << target_right_lane_car_ahead_dist << endl;
   
-  // TODO: Adjust speed
+  double curve_est_s = start_pos.s + speed_limit * 4.0;
+  if (curve_est_s > max_s) curve_est_s -= max_s;
+  double curve_est_d = start_pos.d;
+  
+  Position curve_est_pos;
+  curve_est_pos.calc_xy(curve_est_s, curve_est_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+  curve_est_pos.calc_theta(start_pos);
+  
+  double delta_theta = fabs(curve_est_pos.theta - start_pos.theta);
+  if (delta_theta > M_PI) delta_theta = 2 * M_PI - delta_theta;
+  double curve_max_speed = (- 2.0 * speed_limit) * delta_theta + speed_limit + 5.0;
+  
+  if (delta_theta > 0.2) {
+    change_left_blocked = true;
+    change_right_blocked = true;
+  }
+  
+  cout << "******************** Curve est theta=" << curve_est_pos.theta << endl;
+  cout << "startpos.theta=" << start_pos.theta << " / delta=" << (curve_est_pos.theta - start_pos.theta) << endl;
+  cout << "curve_max_speed=" << curve_max_speed << endl;
+  
   double target_d;
   double target_v;
   if (current_lane != target_lane) {  // in between lanes, finish previous trajectory
@@ -352,12 +440,10 @@ void Car::create_candidate_trajectories(Position start_pos, int no_points, Posit
     } else {
       target_v = speed_limit;
     }
-//    best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane, no_points);
   } else {
-    if (target_lane_car_ahead_dist > 100.0) {   // no car ahead, just keep lane
+    if (target_lane_car_ahead_dist > 150.0) {   // no car ahead, just keep lane
       target_d = target_lane;
       target_v = speed_limit;
-//      best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane, no_points);
     } else {                          // car ahead
       if (!change_right_blocked) {
         target_d = target_lane + 4;
@@ -366,7 +452,6 @@ void Car::create_candidate_trajectories(Position start_pos, int no_points, Posit
         } else {
           target_v = speed_limit;
         }
-//        best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane + 4, no_points);
       } else if (!change_left_blocked) {
         target_d = target_lane - 4;
         if (target_left_lane_car_ahead_dist < 50.0) {
@@ -374,7 +459,6 @@ void Car::create_candidate_trajectories(Position start_pos, int no_points, Posit
         } else {
           target_v = speed_limit;
         }
-//        best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane - 4, no_points);
       } else {
         target_d = target_lane;
         if (target_lane_car_ahead_dist < 50.0) {
@@ -382,14 +466,20 @@ void Car::create_candidate_trajectories(Position start_pos, int no_points, Posit
         } else {
           target_v = speed_limit;
         }
-//        best_trajectory = calculateFallbackTrajectory(start_pos, speed_limit, target_lane, no_points);
       }
     }
   }
   
-  best_trajectory = calculateFallbackTrajectory(start_pos, target_v, target_d, no_points);
+  if (debug_counter > 3) {
+    target_v = min(target_v, curve_max_speed);
+    if (desired_path_len - no_points < 25) {
+      target_v = min(target_v, speed_limit / 2.0);
+      cout << "Reduced speed speed up calculation: " << target_v << endl;
+    }
+  }
+  best_trajectory = calculateFallbackTrajectory(start_pos, target_v, target_d, no_points, start_time);
   
-  if (best_trajectory.pos.size() == 0) exit(13);
+//  if (best_trajectory.pos.size() == 0) exit(13);
   
   
   /*

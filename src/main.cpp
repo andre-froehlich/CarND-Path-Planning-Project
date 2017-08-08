@@ -163,12 +163,7 @@ int main() {
           auto sensor_fusion = j[1]["sensor_fusion"];
           
           car.current_lane = getLane(car_d);
-          
-
-          
-          
         
-          
           /*
           car.car_in_lane_dist = numeric_limits<double>::max();
           
@@ -239,8 +234,8 @@ int main() {
             car.target_left_lane_car_ahead_dist = numeric_limits<double>::max();
             car.target_right_lane_car_ahead_dist = numeric_limits<double>::max();
             
-            cout << "Iterating sensor fusion: target_lane=" << car.target_lane << endl;
-            cout << "change_left_blocked=" << car.change_left_blocked << " / change_right_blocked=" << car.change_right_blocked << endl;
+//            cout << "Iterating sensor fusion: target_lane=" << car.target_lane << endl;
+//            cout << "change_left_blocked=" << car.change_left_blocked << " / change_right_blocked=" << car.change_right_blocked << endl;
             
             for (int i=0; i<sensor_fusion.size(); i++) {
               auto c = sensor_fusion[i];
@@ -252,16 +247,16 @@ int main() {
               double s = c[5];
               double d = c[6];
               
-              if (d < -2.0 || d > 12) continue;
+              if (d < -2.0 || d > 12.0) continue;
               
               OtherCar other = OtherCar(id, x, y, vx, vy, s, d, car.map_waypoints_s, car.map_waypoints_x, car.map_waypoints_y);
-              cout << other.toString() << endl;
+//              cout << other.toString() << endl;
               
               bool occupies_left = (d <= 5.5);
               bool occupies_middle = ((d >= 2.5) && (d <= 9.5));
               bool occupies_right = (d >= 6.5);
               
-              cout << "occupies left=" << occupies_left << " / middle=" << occupies_middle << " / right=" << occupies_right << endl;
+//              cout << "occupies left=" << occupies_left << " / middle=" << occupies_middle << " / right=" << occupies_right << endl;
               
               double ds = s - car_s;
               if (ds < -half_max_s) {
@@ -270,9 +265,15 @@ int main() {
               if (ds > half_max_s) {
                 ds -= max_s;
               }
-              cout << "ds=" << ds << endl;
+//              cout << "ds=" << ds << endl;
               
-              bool is_in_blocking_dist = fabs(ds) < lane_change_safe_dist;
+              double delta_v = other.v_total - car_speed;
+              bool is_in_blocking_dist = fabs(ds) <= 10.0;
+              if (ds < -10.0 && delta_v > 0.0) {
+                is_in_blocking_dist = true;
+              } else if (ds > 10.0 && delta_v < 0.0) {
+                is_in_blocking_dist = true;
+              }
               
               if (car.target_lane == Lane::LEFT) {
                 if (occupies_left && ds > 0 && ds < car.target_lane_car_ahead_dist) {
@@ -327,7 +328,7 @@ int main() {
                 }
               }
               
-              cout << "change_left_blocked=" << car.change_left_blocked << " / change_right_blocked=" << car.change_right_blocked << endl;
+//              cout << "change_left_blocked=" << car.change_left_blocked << " / change_right_blocked=" << car.change_right_blocked << endl;
             }
           
             car.best_trajectory.pos.clear();
@@ -375,9 +376,6 @@ int main() {
                 newPos.set_xy(previous_path_x[i], previous_path_y[i]);
                 newPos.calc_v_xy(prevPos);
                 newPos.calc_v_total();
-                
-//                newPos.calc_a_xy(prevPos);
-//                newPos.calc_a_total();
              
                 car.previous_trajectory.pos.push_back(newPos);
                 prevPos = newPos;
@@ -401,6 +399,7 @@ int main() {
             
             }
             
+            /*
 //            cout << "NP:" << no_points << endl;
 
             
@@ -414,6 +413,7 @@ int main() {
 //                ty.push_back(previous_path_y[i]);
 //              }
 //            }
+             */
             
             car.create_candidate_trajectories(start_pos, no_points, min_start_pos, min_no_points, start_time);
           }
@@ -433,7 +433,15 @@ int main() {
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
           
           long long end_time = system_clock::now().time_since_epoch().count();
-//          cout << "Cycle took " << (end_time - start_time) << "ms." << endl << endl;
+          long long duration = end_time - start_time;
+          cout << "Cycle took " << (end_time - start_time) << " ticks." << endl;
+          
+          if (duration > 1000000) {
+            cout << "Calculation took too long" << endl;
+            exit(19);
+          }
+          
+          
         }
       } else {
         // Manual driving

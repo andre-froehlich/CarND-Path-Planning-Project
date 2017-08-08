@@ -74,11 +74,11 @@ public:
   double target_lane_car_ahead_dist;
   
   OtherCar target_left_lane_car_ahead;
-  bool change_left_blocked;
+  bool change_left_blocked = true;
   double target_left_lane_car_ahead_dist;
   
   OtherCar target_right_lane_car_ahead;
-  bool change_right_blocked;
+  bool change_right_blocked = true;
   double target_right_lane_car_ahead_dist;
   
   // Creates a set of candidate trajectories.
@@ -86,7 +86,7 @@ public:
   
   // Calculates a minimum jerk trajectory for the given inputs.
   Trajectory calculateTrajectory(Position start_pos, double target_d, double desired_v, int no_points);
-  Trajectory calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points);
+  Trajectory calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points, long long start_time);
   
   // Calculates the cost for a given trajectory. Returns false, if trajectory is not feasible.
   bool evaluate_trajectory(Trajectory traj);

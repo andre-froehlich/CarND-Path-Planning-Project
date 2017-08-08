@@ -127,15 +127,15 @@ double get_angle(double x, double y) {
     if (y >= 0.0) {
       return 0.0;
     } else {
-      return pi();
+      return M_PI;
     }
   }
   
   if (y == 0.0) {
     if (x >= 0.0) {
-      return 0.5 * pi();
+      return 0.5 * M_PI;
     } else {
-      return 1.5 * pi();
+      return 1.5 * M_PI;
     }
   }
   
@@ -143,13 +143,13 @@ double get_angle(double x, double y) {
     if (y >= 0.0) {   // upper right quadrant
       return atan(fabs(x) / fabs(y));
     } else {          // lower right quadrant
-      return atan(fabs(y) / fabs(x)) + 0.5 * pi();
+      return atan(fabs(y) / fabs(x)) + 0.5 * M_PI;
     }
   } else {
     if (y >= 0.0) {   // upper left quadrant
-      return atan(fabs(y) / fabs(x)) + 1.5 * pi();
+      return atan(fabs(y) / fabs(x)) + 1.5 * M_PI;
     } else {          // lower left qudrant
-      return atan(fabs(x) / fabs(y)) + pi();
+      return atan(fabs(x) / fabs(y)) + M_PI;
     }
   }
 }
