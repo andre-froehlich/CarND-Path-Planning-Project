@@ -21,6 +21,7 @@ const double MPH2MS = 0.44704;
 const double DT = 0.02;
 const double MAX_S = 6945.554;
 const double SPEED_LIMIT = 22.1; //22.3
+const double MAX_DV = 0.15;
 
 // convert degrees to radians
 double deg2rad(double x) { return x * M_PI / 180; }
@@ -158,7 +159,7 @@ int main() {
             int prev_path_size = previous_path_x.size();
             
             double ref_x, ref_y, ref_yaw, ref_vel;
-            ref_vel = min(car_speed + 1.0, SPEED_LIMIT);
+//            ref_vel = min(car_speed + 1.0, SPEED_LIMIT);
             
             // Add passed anchor points
             vector<double> anchor_x, anchor_y;
@@ -168,20 +169,23 @@ int main() {
               ref_x = car_x;
               ref_y = car_y;
               ref_yaw = car_yaw;
+              ref_vel = car_speed;
               anchor_x.push_back(prev_car_x);
               anchor_x.push_back(car_x);
               anchor_y.push_back(prev_car_y);
               anchor_y.push_back(car_y);
-//              last_point.x = car_x;
-//              last_point.y = car_y;
-//              last_point.s = car_s;
-//              last_point.d = car_d;
+              
             } else {                                        // If there is a prev path use last two points as anchor
               ref_x = previous_path_x[prev_path_size - 1];
               ref_y = previous_path_y[prev_path_size - 1];
               double ref_x_prev = previous_path_x[prev_path_size - 2];
               double ref_y_prev = previous_path_y[prev_path_size - 2];
               ref_yaw = atan2(ref_y-ref_y_prev, ref_x-ref_x_prev);
+              
+              double dx = ref_x - ref_x_prev;
+              double dy = ref_y - ref_y_prev;
+              ref_vel = sqrt(dx * dx + dy * dy) / DT;
+              
               anchor_x.push_back(ref_x_prev);
               anchor_x.push_back(ref_x);
               anchor_y.push_back(ref_y_prev);
@@ -229,14 +233,18 @@ int main() {
               next_y_vals.push_back(previous_path_y[i]);
             }
             
-            double target_x = 30.0;
-            double target_y = s(target_x);
-            double target_dist = sqrt(target_x * target_x + target_y * target_y);
-            double N = target_dist / (DT * ref_vel);
-            double x_incr = target_x / N;
-            double x = x_incr;
+            double target_vel = SPEED_LIMIT;
+            double x = 0.0;
             
             for (int i = 0; i < 50 - prev_path_size; i++) {
+              if (ref_vel < target_vel) {
+                ref_vel = min(target_vel, ref_vel + MAX_DV);
+              } else {
+                ref_vel = max(target_vel, ref_vel - MAX_DV);
+              }
+      
+              x += (ref_vel * DT);
+              
               double y = s(x);
               double rot_x = (x * cos(ref_yaw) - y * sin(ref_yaw));
               double rot_y = (x * sin(ref_yaw) + y * cos(ref_yaw));
@@ -245,8 +253,6 @@ int main() {
               
               next_x_vals.push_back(rot_x);
               next_y_vals.push_back(rot_y);
-              
-              x += x_incr;
             }
             
           }
