@@ -6,31 +6,41 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "No"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "src/othercar.hpp"
-            timestampString = "523483972.701314"
+            filePath = "src/car.cpp"
+            timestampString = "524167244.370833"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "33"
-            endingLineNumber = "33">
+            startingLineNumber = "256"
+            endingLineNumber = "256"
+            landmarkName = "Car::calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points, long long start_time)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
+            shouldBeEnabled = "No"
+            ignoreCount = "1"
             continueAfterRunningActions = "No"
             filePath = "src/car.cpp"
-            timestampString = "523832942.68753"
+            timestampString = "524167244.370833"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "247"
-            endingLineNumber = "247"
-            landmarkName = "Car::calculateFallbackTrajectory(Position start_pos, double desired_v, double desired_d, int no_points, long long start_time)"
+            startingLineNumber = "642"
+            endingLineNumber = "642"
+            landmarkName = "Car::create_candidate_trajectories(Position start_pos, int no_points, Position min_start_pos, int min_no_points, long long start_time)"
             landmarkType = "7">
+            <Actions>
+               <BreakpointActionProxy
+                  ActionExtensionID = "Xcode.BreakpointAction.DebuggerCommand">
+                  <ActionContent
+                     consoleCommand = "">
+                  </ActionContent>
+               </BreakpointActionProxy>
+            </Actions>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

@@ -176,7 +176,4 @@ dependencies: \
   /Users/business/Udacity/CarND-Path-Planning-Project/src/Eigen-3.3/Eigen/src/QR/ColPivHouseholderQR.h \
   /Users/business/Udacity/CarND-Path-Planning-Project/src/Eigen-3.3/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
   /Users/business/Udacity/CarND-Path-Planning-Project/src/json.hpp \
-  /Users/business/Udacity/CarND-Path-Planning-Project/src/spline.h \
-  /Users/business/Udacity/CarND-Path-Planning-Project/src/helper.hpp \
-  /Users/business/Udacity/CarND-Path-Planning-Project/src/car.hpp \
-  /Users/business/Udacity/CarND-Path-Planning-Project/src/position.hpp
+  /Users/business/Udacity/CarND-Path-Planning-Project/src/spline.h
