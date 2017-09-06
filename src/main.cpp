@@ -20,11 +20,37 @@ using json = nlohmann::json;
 const double MPH2MS = 0.44704;
 const double DT = 0.02;
 const double MAX_S = 6945.554;
+const double HALF_MAX_S = MAX_S / 2.0;
 const double SPEED_LIMIT = 22.1; //22.3
 const double MAX_DV = 0.15;
+const double SAVE_DIST_AHEAD = 25.0;
+const double SAVE_DIST_BEHIND = -25.0;
+
+// State
+int current_lane = 1;
+int target_lane = 1;
+
+struct OtherCar {
+  bool initialized = false;
+  double s, vel, ds;
+  vector<bool> occupancies;
+};
 
 // convert degrees to radians
 double deg2rad(double x) { return x * M_PI / 180; }
+
+int getLane(double d) {
+  if (d <= 4.0) return 0;
+  if (d <= 8.0) return 1;
+  return 2;
+}
+
+vector<bool> getLaneOccupancies(double d) {
+  bool occupies_left = (d <= 5.5);
+  bool occupies_middle = ((d >= 2.5) && (d <= 9.5));
+  bool occupies_right = (d >= 6.5);
+  return {occupies_left, occupies_middle, occupies_right};
+}
 
 // convert frenet to xy coordinates
 tk::spline spline_wp_x;
@@ -149,19 +175,166 @@ int main() {
           
           vector<double> next_x_vals, next_y_vals;
           
+          current_lane = getLane(car_d);
+          vector<bool> my_occupancies = getLaneOccupancies(car_d);
           
           if (cycle_counter < 2) {
             
           } else {
-            // Unpack sensor fusion
-            // Decide strategy
+            // *** Unpack sensor fusion ***
+            OtherCar car_ahead, car_left_ahead, car_left_behind, car_right_ahead, car_right_behind;
+            vector<bool> lane_possible;
+            lane_possible.push_back(current_lane != 2);
+            lane_possible.push_back(true);
+            lane_possible.push_back(current_lane != 0);
+            vector<double> lane_speed;
+            lane_speed.push_back(SPEED_LIMIT);
+            lane_speed.push_back(SPEED_LIMIT);
+            lane_speed.push_back(SPEED_LIMIT);
+          
+            for (int i=0; i<sensor_fusion.size(); i++) {
+              auto c = sensor_fusion[i];
+              OtherCar car;
+              car.initialized = true;
+              
+              double d = c[6];
+              if (d < -2.0 || d > 14.0) continue;
+              car.occupancies = getLaneOccupancies(d);
+
+              car.s = c[5];
+              double vx = c[3];
+              double vy = c[4];
+              car.vel = sqrt(vx * vx + vy * vy);
+              
+              car.ds = car.s - car_s;
+              if (car.ds < -HALF_MAX_S) {
+                car.ds += MAX_S;
+              } else if (car.ds > HALF_MAX_S) {
+                car.ds -= MAX_S;
+              }
+              
+              cout << "Car " << i << ": s=" << car.s << " / d=" << d << " / v=" << car.vel << " / ds = " << car.ds << endl;
+              
+              // Lane 0
+              if (car.occupancies[0]) {
+                if (car.ds >= 0.0 && car.ds <= 50.0) lane_speed[0] = min(lane_speed[0], car.vel);
+                if (my_occupancies[0] && (car.ds > 0)) {
+                  // Car is ahead
+                  if (car_ahead.initialized) {
+                    if (car_ahead.ds > car.ds) {
+                      car_ahead = car;
+                    }
+                  } else {
+                    car_ahead = car;
+                  }
+                }
+                if (my_occupancies[1] && car.ds >= SAVE_DIST_BEHIND && car.ds <= SAVE_DIST_AHEAD) {
+                  // Car is on the left
+                  lane_possible[0] = false;
+                }
+              }
+              
+              // Lane 1
+              if (car.occupancies[1]) {
+                if (car.ds >= 0.0 && car.ds <= 50.0) lane_speed[1] = min(lane_speed[1], car.vel);
+                if (my_occupancies[1] && (car.ds > 0)) {
+                  // Car is ahead
+                  if (car_ahead.initialized) {
+                    if (car_ahead.ds > car.ds) {
+                      car_ahead = car;
+                    }
+                  } else {
+                    car_ahead = car;
+                  }
+                }
+                if (my_occupancies[2] && car.ds >= SAVE_DIST_BEHIND && car.ds <= SAVE_DIST_AHEAD) {
+                  // Car is on the left
+                  lane_possible[1] = false;
+                }
+                if (my_occupancies[0] && car.ds >= SAVE_DIST_BEHIND && car.ds <= SAVE_DIST_AHEAD) {
+                  // Car is on the right
+                  lane_possible[1] = false;
+                }
+              }
+              
+              // Lane 2
+              if (car.occupancies[2]) {
+                if (car.ds >= 0.0 && car.ds <= 50.0) lane_speed[2] = min(lane_speed[2], car.vel);
+                if (my_occupancies[2] && (car.ds > 0)) {
+                  // Car is ahead
+                  if (car_ahead.initialized) {
+                    if (car_ahead.ds > car.ds) {
+                      car_ahead = car;
+                    }
+                  } else {
+                    car_ahead = car;
+                  }
+                }
+                if (my_occupancies[1] && car.ds >= SAVE_DIST_BEHIND && car.ds <= SAVE_DIST_AHEAD) {
+                  // Car is on the right
+                  lane_possible[2] = false;
+                }
+              }
+            }
             
-            int prev_path_size = previous_path_x.size();
+            cout << "Lane 0 possible=" << lane_possible[0] << " / speed=" << lane_speed[0] << endl;
+            cout << "Lane 1 possible=" << lane_possible[1] << " / speed=" << lane_speed[1] << endl;
+            cout << "Lane 2 possible=" << lane_possible[2] << " / speed=" << lane_speed[2] << endl;
             
-            double ref_x, ref_y, ref_yaw, ref_vel;
-//            ref_vel = min(car_speed + 1.0, SPEED_LIMIT);
+            // *** Decide strategy ***
+            cout << "CurrentLane=" << current_lane << " / TargetLane=" << target_lane << endl;
             
+            if (current_lane == target_lane) {
+              if (current_lane == 0) {
+                if (lane_speed[0] >= lane_speed[1]) {
+                  target_lane = 0;
+                } else {
+                  if (lane_possible[1]) {
+                    target_lane = 1;
+                  } else {
+                    target_lane = 0;
+                  }
+                }
+              }
+              if (current_lane == 1) {
+                if (lane_speed[1] >= lane_speed[0] && lane_speed[1] >= lane_speed[2]) {
+                  target_lane = 1;
+                } else if (lane_speed[2] >= lane_speed[0] && lane_speed[2] >= lane_speed[1]) {
+                  if (lane_possible[2]) {
+                    target_lane = 2;
+                  } else {
+                    target_lane = 1;
+                  }
+                } else {
+                  if (lane_possible[0]) {
+                    target_lane = 0;
+                  } else {
+                    target_lane = 1;
+                  }
+                }
+              }
+              if (current_lane == 2) {
+                if (lane_speed[2] >= lane_speed[1]) {
+                  target_lane = 2;
+                } else {
+                  if (lane_possible[1]) {
+                    target_lane = 1;
+                  } else {
+                    target_lane = 2;
+                  }
+                }
+              }
+            }
+            
+            double target_vel = lane_speed[target_lane];
+            if (target_vel != SPEED_LIMIT) target_vel -= 0.1;
+            
+            cout << "FINAL TargetLane=" << target_lane << " / speed=" << target_vel << endl;
+            
+            // *** Generate trajectory ***
             // Add passed anchor points
+            int prev_path_size = previous_path_x.size();
+            double ref_x, ref_y, ref_yaw, ref_vel;
             vector<double> anchor_x, anchor_y;
             if (prev_path_size < 2) {                            // If no previous path add manual anchor points
               double prev_car_x = car_x - cos(car_yaw);
@@ -174,8 +347,7 @@ int main() {
               anchor_x.push_back(car_x);
               anchor_y.push_back(prev_car_y);
               anchor_y.push_back(car_y);
-              
-            } else {                                        // If there is a prev path use last two points as anchor
+            } else {                                              // If there is a prev path use last two points as anchor
               ref_x = previous_path_x[prev_path_size - 1];
               ref_y = previous_path_y[prev_path_size - 1];
               double ref_x_prev = previous_path_x[prev_path_size - 2];
@@ -190,27 +362,26 @@ int main() {
               anchor_x.push_back(ref_x);
               anchor_y.push_back(ref_y_prev);
               anchor_y.push_back(ref_y);
-//              last_point = traj[traj.size() - 1];
             }
             
             // Add new anchor points
             double next_s, next_d;
             vector<double> next_frenet;
             
-            next_s = fmod(car_s + 30.0, MAX_S);
-            next_d = 6.0;
-            next_frenet = getXY(next_s, next_d);
-            anchor_x.push_back(next_frenet[0]);
-            anchor_y.push_back(next_frenet[1]);
-            
-            next_s = fmod(car_s + 60.0, MAX_S);
-            next_d = 6.0;
+            next_s = fmod(car_s + 45.0, MAX_S);
+            next_d = target_lane * 4.0 + 2.0;
             next_frenet = getXY(next_s, next_d);
             anchor_x.push_back(next_frenet[0]);
             anchor_y.push_back(next_frenet[1]);
             
             next_s = fmod(car_s + 90.0, MAX_S);
-            next_d = 6.0;
+//            next_d = 6.0;
+            next_frenet = getXY(next_s, next_d);
+            anchor_x.push_back(next_frenet[0]);
+            anchor_y.push_back(next_frenet[1]);
+            
+            next_s = fmod(car_s + 120.0, MAX_S);
+//            next_d = 6.0;
             next_frenet = getXY(next_s, next_d);
             anchor_x.push_back(next_frenet[0]);
             anchor_y.push_back(next_frenet[1]);
@@ -227,16 +398,19 @@ int main() {
             tk::spline s;
             s.set_points(anchor_x, anchor_y);
             
-            
+            // Push previous path to trajectory
             for (int i = 0; i < prev_path_size; i++) {
               next_x_vals.push_back(previous_path_x[i]);
               next_y_vals.push_back(previous_path_y[i]);
             }
             
-            double target_vel = SPEED_LIMIT;
+            // *** Calculate new trajectory points ***
+            
             double x = 0.0;
             
             for (int i = 0; i < 50 - prev_path_size; i++) {
+              
+              
               if (ref_vel < target_vel) {
                 ref_vel = min(target_vel, ref_vel + MAX_DV);
               } else {
@@ -256,6 +430,8 @@ int main() {
             }
             
           }
+          
+          cout << endl;
           
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
