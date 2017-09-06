@@ -22,7 +22,7 @@ const double DT = 0.02;
 const double MAX_S = 6945.554;
 const double HALF_MAX_S = MAX_S / 2.0;
 const double SPEED_LIMIT = 22.1; //22.3
-const double MAX_DV = 0.15;
+const double MAX_DV = 0.10;
 const double SAVE_DIST_AHEAD = 25.0;
 const double SAVE_DIST_BEHIND = -25.0;
 
@@ -137,8 +137,6 @@ int main() {
       auto s = hasData(data);
 
       if (s != "") {
-//        long long start_time = system_clock::now().time_since_epoch().count();
-        
         auto j = json::parse(s);
         
         string event = j[0].get<string>();
@@ -176,6 +174,8 @@ int main() {
           vector<double> next_x_vals, next_y_vals;
           
           current_lane = getLane(car_d);
+          bool in_between_lanes = (car_d < 1.5) || (car_d > 2.5 && car_d < 5.5) || (car_d > 6.5 && car_d < 9.5) || (car_d > 10.5);
+          
           vector<bool> my_occupancies = getLaneOccupancies(car_d);
           
           if (cycle_counter < 2) {
@@ -284,7 +284,7 @@ int main() {
             // *** Decide strategy ***
             cout << "CurrentLane=" << current_lane << " / TargetLane=" << target_lane << endl;
             
-            if (current_lane == target_lane) {
+            if (!in_between_lanes) {
               if (current_lane == 0) {
                 if (lane_speed[0] >= lane_speed[1]) {
                   target_lane = 0;
@@ -368,7 +368,7 @@ int main() {
             double next_s, next_d;
             vector<double> next_frenet;
             
-            next_s = fmod(car_s + 45.0, MAX_S);
+            next_s = fmod(car_s + 60.0, MAX_S);
             next_d = target_lane * 4.0 + 2.0;
             next_frenet = getXY(next_s, next_d);
             anchor_x.push_back(next_frenet[0]);
@@ -407,19 +407,39 @@ int main() {
             // *** Calculate new trajectory points ***
             
             double x = 0.0;
+            double last_x = 0.0;
+            double last_y = 0.0;
+            double last_v = ref_vel;
             
             for (int i = 0; i < 50 - prev_path_size; i++) {
-              
               
               if (ref_vel < target_vel) {
                 ref_vel = min(target_vel, ref_vel + MAX_DV);
               } else {
                 ref_vel = max(target_vel, ref_vel - MAX_DV);
               }
-      
               x += (ref_vel * DT);
               
-              double y = s(x);
+              double y;
+//              double v;
+              
+              while (true) {
+                y = s(x);
+                
+                double dx = x - last_x;
+                double dy = y - last_y;
+                ref_vel = sqrt(dx * dx + dy * dy) / DT;
+                double a = (ref_vel - last_v) / DT;
+
+                if (ref_vel <= SPEED_LIMIT && a <= 10) break;
+                
+                x -= 0.005;
+              }
+              
+              last_x = x;
+              last_y = y;
+              last_v = ref_vel;
+              
               double rot_x = (x * cos(ref_yaw) - y * sin(ref_yaw));
               double rot_y = (x * sin(ref_yaw) + y * cos(ref_yaw));
               rot_x += ref_x;
