@@ -58,7 +58,6 @@ tk::spline spline_wp_y;
 tk::spline spline_wp_dx;
 tk::spline spline_wp_dy;
 vector<double> getXY(double s, double d) {
-  //  cout << "x="<< spline_wp_x(124.5) << " / y=" << spline_wp_y(124.5) << " / dx=" << spline_wp_dx(124.5) << " / dy=" << spline_wp_dy(124.5) << endl;
   double x = spline_wp_x(s);
   x += d * spline_wp_dx(s);
   double y = spline_wp_y(s);
@@ -168,9 +167,6 @@ int main() {
           
           cycle_counter++;
           
-          cout << "Cycle " << cycle_counter << ") Telemetry s=" << car_s << " / d=" << car_d << " / speed=" << car_speed
-          << " / x=" << car_x << " / y=" << car_y << " / yaw=" << car_yaw << endl;
-          
           vector<double> next_x_vals, next_y_vals;
           
           current_lane = getLane(car_d);
@@ -212,8 +208,6 @@ int main() {
               } else if (car.ds > HALF_MAX_S) {
                 car.ds -= MAX_S;
               }
-              
-              cout << "Car " << i << ": s=" << car.s << " / d=" << d << " / v=" << car.vel << " / ds = " << car.ds << endl;
               
               // Lane 0
               if (car.occupancies[0]) {
@@ -277,13 +271,7 @@ int main() {
               }
             }
             
-//            cout << "Lane 0 possible=" << lane_possible[0] << " / speed=" << lane_speed[0] << endl;
-//            cout << "Lane 1 possible=" << lane_possible[1] << " / speed=" << lane_speed[1] << endl;
-//            cout << "Lane 2 possible=" << lane_possible[2] << " / speed=" << lane_speed[2] << endl;
-            
             // *** Decide strategy ***
-//            cout << "CurrentLane=" << current_lane << " / TargetLane=" << target_lane << endl;
-            
             if (!in_between_lanes) {
               if (current_lane == 0) {
                 if (lane_speed[0] >= lane_speed[1]) {
@@ -329,8 +317,6 @@ int main() {
             double target_vel = lane_speed[target_lane];
             if (target_vel != SPEED_LIMIT) target_vel -= 0.1;
             
-            cout << "FINAL TargetLane=" << target_lane << " / speed=" << target_vel << endl;
-            
             // *** Generate trajectory ***
             // Add passed anchor points
             int prev_path_size = previous_path_x.size();
@@ -368,54 +354,23 @@ int main() {
             double next_s, next_d;
             vector<double> next_frenet;
             
-//            next_s = fmod(car_s + 30.0, MAX_S);
-//            next_d = (0.8 * current_lane + 0.2 * target_lane) * 4.0 + 2.0;
-//            next_frenet = getXY(next_s, next_d);
-//            anchor_x.push_back(next_frenet[0]);
-//            anchor_y.push_back(next_frenet[1]);
-//            cout << "d=" << next_d << endl;
-            
-//            next_s = fmod(car_s + 30.0, MAX_S);
-//            next_d = (0.5 * current_lane + 0.5 * target_lane) * 4.0 + 2.0;
-//            next_frenet = getXY(next_s, next_d);
-//            anchor_x.push_back(next_frenet[0]);
-//            anchor_y.push_back(next_frenet[1]);
-//            cout << "d=" << next_d << endl;
-            
-//            next_s = fmod(car_s + 90.0, MAX_S);
-//            next_d = (0.2 * current_lane + 0.8 * target_lane) * 4.0 + 2.0;
-//            next_frenet = getXY(next_s, next_d);
-//            anchor_x.push_back(next_frenet[0]);
-//            anchor_y.push_back(next_frenet[1]);
-//            cout << "d=" << next_d << endl;
-            
             next_s = fmod(car_s + 60.0, MAX_S);
             next_d = (0.05 * current_lane + 0.95 * target_lane) * 4.0 + 2.0;
             next_frenet = getXY(next_s, next_d);
             anchor_x.push_back(next_frenet[0]);
             anchor_y.push_back(next_frenet[1]);
-            cout << "d=" << next_d << endl;
-            
-//            next_s = fmod(car_s + 60.0, MAX_S);
-//            next_d = target_lane * 4.0 + 2.0;
-//            next_frenet = getXY(next_s, next_d);
-//            anchor_x.push_back(next_frenet[0]);
-//            anchor_y.push_back(next_frenet[1]);
-//            cout << "d=" << next_d << endl;
             
             next_s = fmod(car_s + 90.0, MAX_S);
             next_d = target_lane * 4.0 + 2.0;
             next_frenet = getXY(next_s, next_d);
             anchor_x.push_back(next_frenet[0]);
             anchor_y.push_back(next_frenet[1]);
-            cout << "d=" << next_d << endl;
             
             next_s = fmod(car_s + 120.0, MAX_S);
             next_d = target_lane * 4.0 + 2.0;
             next_frenet = getXY(next_s, next_d);
             anchor_x.push_back(next_frenet[0]);
             anchor_y.push_back(next_frenet[1]);
-            cout << "d=" << next_d << endl;
             
             // Transform to car coordinates
             for (int i=0; i < anchor_x.size(); i++) {
@@ -436,7 +391,6 @@ int main() {
             }
             
             // *** Calculate new trajectory points ***
-            
             double x = 0.0;
             double last_x = 0.0;
             double last_y = 0.0;
@@ -452,8 +406,8 @@ int main() {
               x += (ref_vel * DT);
               
               double y;
-//              double v;
               
+              // Check if speed and acceleration limits are not breached
               while (true) {
                 y = s(x);
                 
@@ -481,8 +435,6 @@ int main() {
             }
             
           }
-          
-          cout << endl;
           
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
