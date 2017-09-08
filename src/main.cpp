@@ -178,7 +178,8 @@ int main() {
             
           } else {
             // *** Unpack sensor fusion ***
-            OtherCar car_ahead, car_left_ahead, car_left_behind, car_right_ahead, car_right_behind;
+//            OtherCar car_ahead, car_left_ahead, car_left_behind, car_right_ahead, car_right_behind;
+            OtherCar car_ahead;
             vector<bool> lane_possible;
             lane_possible.push_back(current_lane != 2);
             lane_possible.push_back(true);
