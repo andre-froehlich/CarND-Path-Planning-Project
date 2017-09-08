@@ -21,6 +21,18 @@ In this section we decide whether we stay in the current lane or switch lanes. T
 3. If several lanes have the same travel speed we prefer to stay in the current lane.
 We also remember the lane travel speed and use it as our target speed for trajectory generation. If there is another car ahead we slightly decrease the target speed to avoid crashing.
 
-## 
+## Trajectory generation
+To generate a trajectory we use spline to get a smooth path. We use the old points from the previous path provided by the simulator and then add new points on that spline until the number of points reaches 50.
+* To create the spline we first need to anchor it with the previous trajectory or, if there is none like at the start, with the car's current location.
+* Then we add three new points spaced 60, 90 and 120 meters ahead using frenet coordinates. the d-value is derived from our target lane. Notice that the first point does get an intermediate d-value to avoid overshooting and thus leaving the lane.
+* These three points are converted to xy coordinates.
+* The anchor points and the three new points are then converted to the car coordinate system to simplify deriving the new trajectory points later.
+* All these points in car coordinate system are used to create a spline.
+* Then we use the spline to derive the new trajectory points.
+* While doing that we constantly change the current speed in the direction of the target speed from the last section. The speed change is chosen, so that we do not exceed acceleration limits.
+* We also check for speed and acceleration limit violations and adjust the trajectory points accordingly.
+* The last step is to rotate and shift the points back to the global coordinate system.
+
+
 
 
