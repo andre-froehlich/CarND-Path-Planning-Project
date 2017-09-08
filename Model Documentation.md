@@ -1,6 +1,6 @@
 # Model documentation
 
-The model generation consists in this project consists of three main parts:
+The model generation in this project consists of three main parts:
 1. Unpacking sensor fusion data
 2. Deciding on the strategy
 3. Trajectory generation
@@ -24,7 +24,7 @@ We also remember the lane travel speed and use it as our target speed for trajec
 ## Trajectory generation
 To generate a trajectory we use spline to get a smooth path. We use the old points from the previous path provided by the simulator and then add new points on that spline until the number of points reaches 50.
 * To create the spline we first need to anchor it with the previous trajectory or, if there is none like at the start, with the car's current location.
-* Then we add three new points spaced 60, 90 and 120 meters ahead using frenet coordinates. the d-value is derived from our target lane. Notice that the first point does get an intermediate d-value to avoid overshooting and thus leaving the lane.
+* Then we add three new points spaced 60, 90 and 120 meters ahead using frenet coordinates. The d-value is derived from our target lane. Notice that the first point does get an intermediate d-value to avoid overshooting and thus leaving the lane.
 * These three points are converted to xy coordinates.
 * The anchor points and the three new points are then converted to the car coordinate system to simplify deriving the new trajectory points later.
 * All these points in car coordinate system are used to create a spline.
