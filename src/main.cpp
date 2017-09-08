@@ -391,7 +391,7 @@ int main() {
               next_y_vals.push_back(previous_path_y[i]);
             }
             
-            // *** Calculate new trajectory points ***
+            // *** Calculate new trajectory points *** 
             double x = 0.0;
             double last_x = 0.0;
             double last_y = 0.0;
